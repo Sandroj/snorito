@@ -106,11 +106,23 @@ app.get('/api/me', (req, res) => {
 
 app.get('/api/riders', (_req, res) => {
   const riders = db.prepare(`
-    SELECT r.*, t.name AS team_name, t.abbreviation AS team_abbr
+    SELECT r.*, t.name AS team_name, t.abbreviation AS team_abbr, t.shirt_url AS team_shirt
     FROM riders r JOIN cycling_teams t ON t.id = r.team_id
     ORDER BY r.price DESC, r.name
   `).all().map((r) => ({ ...r, qualities: JSON.parse(r.qualities) }));
   res.json({ riders, budget: BUDGET, teamSize: TEAM_SIZE, maxPerTeam: MAX_PER_CYCLING_TEAM });
+});
+
+app.get('/api/teams', (_req, res) => {
+  const teams = db.prepare(`
+    SELECT t.id, t.name, t.abbreviation AS abbr, t.shirt_url AS shirt,
+      COUNT(r.id) AS rider_count,
+      MIN(r.price) AS min_price
+    FROM cycling_teams t LEFT JOIN riders r ON r.team_id = t.id
+    GROUP BY t.id
+    ORDER BY t.name
+  `).all();
+  res.json({ teams });
 });
 
 app.get('/api/stages', (_req, res) => {

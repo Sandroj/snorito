@@ -57,6 +57,11 @@ export default function App() {
 
   return (
     <SessionContext.Provider value={{ user, teamCount, refresh }}>
+      <div className="bg-anim" aria-hidden>
+        <span className="blob1" />
+        <span className="blob2" />
+        <span className="blob3" />
+      </div>
       <header className="topbar">
         <Logo />
         <div className="top-actions">

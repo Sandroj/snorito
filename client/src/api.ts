@@ -3,6 +3,8 @@ export interface Rider {
   name: string;
   team_id: number;
   team_name: string;
+  team_abbr: string | null;
+  team_shirt: string | null;
   nationality: string;
   age: number;
   price: number;
@@ -10,6 +12,18 @@ export interface Rider {
   qualities: Record<string, number>;
   last_started_stage: number | null;
 }
+
+export interface CyclingTeam {
+  id: number;
+  name: string;
+  abbr: string | null;
+  shirt: string | null;
+  rider_count: number;
+  min_price: number;
+}
+
+// De 7 kwaliteiten waarop je in het echte spel filtert (Jongeren is leeftijdsgebonden).
+export const QUALITIES = ['Klassement', 'Klimmer', 'Heuvels', 'Sprinten', 'Punchen', 'Tijdrijden', 'Kasseien'] as const;
 
 export interface Stage {
   nr: number;

@@ -29,7 +29,8 @@ CREATE TABLE IF NOT EXISTS sessions (
 CREATE TABLE IF NOT EXISTS cycling_teams (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL UNIQUE,
-  abbreviation TEXT
+  abbreviation TEXT,
+  shirt_url TEXT
 );
 
 CREATE TABLE IF NOT EXISTS riders (
@@ -135,6 +136,15 @@ CREATE TABLE IF NOT EXISTS config (
   value TEXT
 );
 `);
+
+// Lichte migraties: voeg kolommen toe aan bestaande databases zonder ze te wissen.
+function ensureColumn(table, column, definition) {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all().map((c) => c.name);
+  if (!cols.includes(column)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+}
+ensureColumn('cycling_teams', 'shirt_url', 'TEXT');
+ensureColumn('stages', 'image_url', 'TEXT');
+ensureColumn('stages', 'description', 'TEXT');
 
 export const BUDGET = 45_000_000;
 export const TEAM_SIZE = 20;

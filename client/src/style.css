@@ -29,11 +29,31 @@ html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;
   font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  background: var(--bg);
+  background: transparent;
   color: var(--ink);
   font-size: 15px;
   line-height: 1.45;
+  overflow-x: hidden;
 }
+
+/* ============ Rustige achtergrondanimatie ============ */
+.bg-anim {
+  position: fixed; inset: 0; z-index: -1; overflow: hidden;
+  background: linear-gradient(180deg, #EDF1F8 0%, #F4F6FA 55%, #EEF2F8 100%);
+}
+.bg-anim span {
+  position: absolute; border-radius: 50%; filter: blur(64px); opacity: .55;
+  animation: floatBlob 26s ease-in-out infinite;
+}
+.bg-anim .blob1 { width: 46vmax; height: 46vmax; background: radial-gradient(circle, #FFE07A, transparent 68%); top: -14vmax; left: -10vmax; }
+.bg-anim .blob2 { width: 40vmax; height: 40vmax; background: radial-gradient(circle, #A7C9FF, transparent 68%); bottom: -12vmax; right: -8vmax; animation-delay: -9s; }
+.bg-anim .blob3 { width: 34vmax; height: 34vmax; background: radial-gradient(circle, #B7F0CE, transparent 68%); top: 42%; left: 52%; animation-delay: -17s; }
+@keyframes floatBlob {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(4vmax, -3vmax) scale(1.08); }
+  66% { transform: translate(-3vmax, 3vmax) scale(.94); }
+}
+@media (prefers-reduced-motion: reduce) { .bg-anim span { animation: none; } }
 a { color: var(--blauw); text-decoration: none; }
 button { font-family: inherit; }
 
@@ -87,10 +107,19 @@ h2 { font-size: 16px; font-weight: 700; margin: 0 0 10px; }
 }
 
 .card {
-  background: var(--surface); border-radius: var(--radius); padding: 16px;
-  margin: 10px 0; box-shadow: var(--shadow-sm); border: 1px solid rgba(231, 234, 240, .8);
+  background: rgba(255, 255, 255, .8);
+  backdrop-filter: blur(12px) saturate(1.1); -webkit-backdrop-filter: blur(12px) saturate(1.1);
+  border-radius: var(--radius); padding: 16px;
+  margin: 10px 0; box-shadow: var(--shadow-sm); border: 1px solid rgba(255, 255, 255, .6);
 }
 .card.flush { padding: 0; overflow: hidden; }
+
+/* Glass-hulpklasse voor losse componenten */
+.glass {
+  background: rgba(255, 255, 255, .72) !important;
+  backdrop-filter: blur(14px) saturate(1.2); -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  border: 1px solid rgba(255, 255, 255, .6);
+}
 
 .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .spread { justify-content: space-between; }
@@ -153,10 +182,12 @@ label { font-size: 13px; font-weight: 600; color: #344054; display: block; margi
 /* ============ Summary / budget bar ============ */
 .summary {
   position: sticky; top: 66px; z-index: 30;
-  background: var(--navy); color: #fff; border-radius: var(--radius);
+  background: rgba(14, 20, 32, .82); color: #fff; border-radius: var(--radius);
+  backdrop-filter: blur(16px) saturate(1.2); -webkit-backdrop-filter: blur(16px) saturate(1.2);
   padding: 14px 16px; margin: 12px 0;
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-md); border: 1px solid rgba(255, 255, 255, .08);
 }
+.summary.glass { background: rgba(14, 20, 32, .82) !important; }
 .summary .stats { display: flex; gap: 22px; align-items: center; }
 .summary .stat { flex: 1; }
 .summary .stat .lab { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #98A2B3; }
@@ -318,9 +349,75 @@ tr.me td:first-child { box-shadow: inset 3px 0 0 var(--geel); }
 .pos-grid { display: grid; grid-template-columns: 34px 1fr; gap: 6px; align-items: center; margin: 4px 0; }
 .pos-grid .nr { text-align: right; color: #98A2B3; font-size: 13px; font-weight: 600; }
 
+/* ============ Segmented control (Renners / Ploegen) ============ */
+.segmented {
+  display: flex; gap: 4px; padding: 4px; margin: 12px 0 4px;
+  background: rgba(255, 255, 255, .6); border: 1px solid var(--line); border-radius: 13px;
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+}
+.segmented button {
+  flex: 1; border: none; background: transparent; padding: 10px; border-radius: 10px;
+  font-weight: 700; font-size: 14px; color: var(--muted); cursor: pointer; transition: all .15s;
+}
+.segmented button.on { background: var(--navy); color: #fff; box-shadow: var(--shadow-sm); }
+
+/* ============ Wrappende filter-chips (geen scroll meer) ============ */
+.chip-filter { display: flex; flex-wrap: wrap; gap: 7px; margin: 10px 0; }
+.chip-filter button {
+  border: 1.5px solid var(--line); background: rgba(255, 255, 255, .7); border-radius: 999px;
+  padding: 7px 14px; font-size: 13px; font-weight: 650; color: #344054; cursor: pointer; transition: all .12s;
+}
+.chip-filter button:hover { border-color: var(--geel-donker); }
+.chip-filter button.on { background: var(--geel); border-color: var(--geel-donker); color: var(--navy); }
+
+/* ============ Ploegen-grid + kaarten ============ */
+.teams-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin: 12px 0; }
+.team-card {
+  display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px 10px;
+  border-radius: 15px; border: 1px solid var(--line); cursor: pointer; text-align: center;
+  transition: transform .12s, box-shadow .12s;
+}
+.team-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.team-card-name { font-weight: 700; font-size: 13px; line-height: 1.25; }
+.team-filter-head { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 15px; margin: 10px 0; border: 1px solid var(--line); }
+
+/* ============ Shirt-thumbnails ============ */
+.shirt { object-fit: contain; flex-shrink: 0; }
+.shirt-fallback {
+  border-radius: 7px;
+  background: repeating-linear-gradient(45deg, #E4E7EC, #E4E7EC 4px, #F2F4F7 4px, #F2F4F7 8px);
+}
+
+/* ============ Kwaliteits-bolletjes (halve stappen) ============ */
+.qdots { display: inline-flex; gap: 3px; }
+.qdot { width: 9px; height: 9px; border-radius: 999px; background: #D5D9E0; overflow: hidden; position: relative; display: inline-block; flex-shrink: 0; }
+.qdot > span { position: absolute; left: 0; top: 0; bottom: 0; background: var(--geel-donker); }
+.qtag { display: inline-flex; align-items: center; gap: 5px; }
+.qtag-name { font-size: 11.5px; color: var(--muted); font-weight: 600; }
+
+/* ============ Rider-row: tweede regel met kwaliteiten ============ */
+.rider-row .name-line { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.rider-row .name-line .name { font-weight: 650; font-size: 14.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rider-row .quals { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 4px; }
+.rider-row .rider-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
 .center { text-align: center; }
 .fade-in { animation: fadeIn .25s ease; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+@media (max-width: 480px) {
+  .app { padding: 0 12px 104px; }
+  h1 { font-size: 21px; }
+  .summary { padding: 13px 14px; }
+  .summary .stats { gap: 10px; }
+  .summary .stat .lab { font-size: 10px; }
+  .summary .stat .val { font-size: 15px; }
+  .btn-primary { padding: 11px 16px; }
+  .rider-row { padding: 10px 12px; gap: 9px; }
+  .rider-row .name-line .name { font-size: 14px; }
+  .teams-grid { grid-template-columns: repeat(2, 1fr); }
+  .podium .nm { font-size: 12px; }
+}
 
 @media (min-width: 640px) {
   .app { padding-bottom: 120px; }

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, flag, fmtDate, fmtTime, Rider, Stage, terrainLabel, typeChipClass } from '../api';
 import { ClockIcon, MountainIcon } from '../components/Icons';
+import { Shirt } from '../components/Quality';
 
 const LINEUP_SIZE = 9;
 
@@ -156,6 +157,7 @@ export default function Lineup() {
           const out = r.last_started_stage != null && stage && r.last_started_stage < stage.nr;
           return (
             <div key={r.id} className={`rider-row ${isSel ? 'selected' : ''} ${out ? 'disabled' : ''}`}>
+              <Shirt url={r.team_shirt} size={28} />
               <span className="flag" onClick={() => !out && toggle(r.id)}>{flag(r.nationality)}</span>
               <div className="info" onClick={() => !out && toggle(r.id)}>
                 <div className="name">

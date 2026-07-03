@@ -21,8 +21,10 @@ export function runSeed({ quiet = false } = {}) {
   const log = quiet ? () => {} : console.log;
   const ridersJson = JSON.parse(fs.readFileSync(path.join(dataDir, 'scorito_tdf2026_riders.json'), 'utf8'));
   const stagesJson = JSON.parse(fs.readFileSync(path.join(dataDir, 'stages_tdf2026.json'), 'utf8'));
+  const teamsJson = JSON.parse(fs.readFileSync(path.join(dataDir, 'teams_tdf2026.json'), 'utf8'));
+  const teamMeta = Object.fromEntries(teamsJson.map((t) => [t.name, t]));
 
-  log(`Seeding: ${ridersJson.length} renners, ${stagesJson.length} etappes`);
+  log(`Seeding: ${ridersJson.length} renners, ${stagesJson.length} etappes, ${teamsJson.length} ploegen`);
 
   const wipe = db.transaction(() => {
     for (const t of [
@@ -35,9 +37,12 @@ export function runSeed({ quiet = false } = {}) {
 
   // --- ploegen en renners -----------------------------------------------------
   const teamNames = [...new Set(ridersJson.map((r) => r.team))];
-  const insTeam = db.prepare('INSERT INTO cycling_teams (name) VALUES (?)');
+  const insTeam = db.prepare('INSERT INTO cycling_teams (name, abbreviation, shirt_url) VALUES (?, ?, ?)');
   const teamIdByName = {};
-  for (const name of teamNames) teamIdByName[name] = insTeam.run(name).lastInsertRowid;
+  for (const name of teamNames) {
+    const meta = teamMeta[name];
+    teamIdByName[name] = insTeam.run(name, meta?.abbr ?? null, meta?.shirt ?? null).lastInsertRowid;
+  }
 
   const insRider = db.prepare(`
     INSERT INTO riders (id, name, team_id, nationality, age, price, type, qualities)
