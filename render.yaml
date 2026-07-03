@@ -10,6 +10,8 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: NPM_CONFIG_PRODUCTION
+        value: "false"
       # De database wordt automatisch geseed bij de eerste (lege) boot.
       # Op het free-plan is de schijf tijdelijk: bij een nieuwe deploy wordt
       # opnieuw geseed. Wil je dat teams/poules bewaard blijven, koppel dan een
