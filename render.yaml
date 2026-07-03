@@ -1,0 +1,18 @@
+# Render Blueprint — deploy Snorito als één web-service (API + gebouwde frontend).
+# Zie: https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: snorito
+    runtime: node
+    plan: free
+    buildCommand: npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # De database wordt automatisch geseed bij de eerste (lege) boot.
+      # Op het free-plan is de schijf tijdelijk: bij een nieuwe deploy wordt
+      # opnieuw geseed. Wil je dat teams/poules bewaard blijven, koppel dan een
+      # persistent disk (betaald plan) en zet DB_PATH naar het mount-pad, bijv.:
+      # - key: DB_PATH
+      #   value: /data/snorito.db

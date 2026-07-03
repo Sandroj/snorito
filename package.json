@@ -1,0 +1,14 @@
+{
+  "name": "snorito",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Snorito — wielerpoule (Tour de France 2026). Eén Node-service serveert API + gebouwde frontend.",
+  "scripts": {
+    "build": "npm --prefix client install && npm --prefix client run build && npm --prefix server install",
+    "start": "node server/src/index.js",
+    "seed": "npm --prefix server run seed"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

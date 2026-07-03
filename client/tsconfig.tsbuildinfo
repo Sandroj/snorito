@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/api.ts","./src/main.tsx","./src/components/icons.tsx","./src/components/logo.tsx","./src/pages/admin.tsx","./src/pages/lineup.tsx","./src/pages/login.tsx","./src/pages/points.tsx","./src/pages/pools.tsx","./src/pages/ranking.tsx","./src/pages/rules.tsx","./src/pages/team.tsx"],"version":"5.9.3"}
