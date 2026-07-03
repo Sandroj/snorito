@@ -9,7 +9,7 @@
     "seed": "npm --prefix server run seed"
   },
   "engines": {
-    "node": ">=18"
+    "node": "22.x"
   },
   "devDependencies": {
     "@types/react": "^19.2.17",
