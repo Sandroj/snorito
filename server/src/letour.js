@@ -13,6 +13,8 @@ export const TEAM_ALIASES = {
 };
 
 // Individueel klassementsfragment (ite/itg/ipg/img/ijg): positie + rugnummer.
+// Bij puntenklassementen (ipg/img) staat het puntentotaal in een cel als
+// "12 PTS"; bij tijdklassementen ontbreekt zo'n cel en blijft points null.
 export function parseRiderRanking(html) {
   if (!html) return [];
   const $ = cheerio.load(html);
@@ -21,7 +23,12 @@ export function parseRiderRanking(html) {
     const $tr = $(tr);
     const position = parseInt($tr.find('.rankingTables__row__position span').first().text().trim(), 10);
     const bib = parseInt(($tr.find('[data-bib]').first().attr('data-bib') || '').replace('#', ''), 10);
-    if (Number.isInteger(position) && position >= 1 && Number.isInteger(bib)) rows.push({ position, bib });
+    let points = null;
+    $tr.find('td').each((_, td) => {
+      const m = $(td).text().trim().match(/^(\d+)\s*PTS?$/i);
+      if (m) points = parseInt(m[1], 10);
+    });
+    if (Number.isInteger(position) && position >= 1 && Number.isInteger(bib)) rows.push({ position, bib, points });
   });
   return rows;
 }

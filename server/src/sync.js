@@ -198,7 +198,12 @@ function payloadFromLetour(stage, fragments, riders, teams) {
   const CLS_FRAGMENTS = { alg: 'itg', punt: 'ipg', berg: 'img', jong: 'ijg' };
   const classLists = {};
   for (const [cls, key] of Object.entries(CLS_FRAGMENTS)) {
-    classLists[cls] = parseRiderRanking(fragments[key]).slice(0, TOP_CLASS);
+    let rows = parseRiderRanking(fragments[key]);
+    // Punten- en bergklassement: renners met 0 punten zijn opvulling van
+    // letour.fr (bijv. na een ploegentijdrit) — geen echte klassering, dus
+    // geen truipunten. Tijdklassementen (alg/jong) hebben points null.
+    if (cls === 'punt' || cls === 'berg') rows = rows.filter((r) => r.points !== 0);
+    classLists[cls] = rows.slice(0, TOP_CLASS);
   }
   if (classLists.alg.length < TOP_CLASS) return null;
   for (const cls of Object.keys(CLS_FRAGMENTS)) {
