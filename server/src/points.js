@@ -1,4 +1,4 @@
-import { db, riderStarted, CAPTAIN_FACTOR } from './db.js';
+import { all, get, tx, riderStarted, CAPTAIN_FACTOR } from './db.js';
 
 // Puntentabellen — zie docs/scorito-spelregels.md
 export const STAGE_POINTS = [50, 44, 40, 36, 32, 30, 28, 26, 24, 22, 20, 18, 16, 14, 12, 10, 8, 6, 4, 2];
@@ -19,64 +19,63 @@ export const FINAL_POINTS = {
 export const FINAL_TEAM_POINTS = { alg: 24, punt: 18, berg: 18, jong: 9 };
 export const CLASSIFICATIONS = ['alg', 'punt', 'berg', 'jong'];
 
-const allRiders = () => db.prepare('SELECT * FROM riders').all();
+const ADD_POINTS_SQL =
+  'INSERT INTO rider_points (stage_nr, rider_id, category, points) VALUES (?, ?, ?, ?) ' +
+  'ON CONFLICT (stage_nr, rider_id, category) DO UPDATE SET points = rider_points.points + EXCLUDED.points';
 
 // Verwerkt een etappe: berekent rider_points en user_scores.
 // Idempotent: verwijdert eerst bestaande punten voor deze etappe.
-export function processStage(stageNr) {
-  const stage = db.prepare('SELECT * FROM stages WHERE nr = ?').get(stageNr);
+export async function processStage(stageNr) {
+  const stage = await get('SELECT * FROM stages WHERE nr = ?', [stageNr]);
   if (!stage) throw new Error(`Etappe ${stageNr} bestaat niet`);
 
-  const riders = allRiders();
+  const riders = await all('SELECT * FROM riders');
   const riderById = new Map(riders.map((r) => [r.id, r]));
 
-  const tx = db.transaction(() => {
-    db.prepare('DELETE FROM rider_points WHERE stage_nr = ?').run(stageNr);
-    db.prepare('DELETE FROM user_scores WHERE stage_nr = ?').run(stageNr);
+  await tx(async (h) => {
+    await h.run('DELETE FROM rider_points WHERE stage_nr = ?', [stageNr]);
+    await h.run('DELETE FROM user_scores WHERE stage_nr = ?', [stageNr]);
 
-    const addPoints = db.prepare(
-      'INSERT INTO rider_points (stage_nr, rider_id, category, points) VALUES (?, ?, ?, ?) ' +
-      'ON CONFLICT (stage_nr, rider_id, category) DO UPDATE SET points = points + excluded.points'
-    );
+    const addPoints = (riderId, category, points) => h.run(ADD_POINTS_SQL, [stageNr, riderId, category, points]);
 
     // 1. Etappe-uitslag
     let stageWinnerTeamId = null;
     if (stage.type === 'TTT') {
       // Ploegentijdrit: per ploegklassering krijgen alle gestarte renners van die ploeg punten (top 8).
-      const rows = db.prepare('SELECT * FROM ttt_results WHERE stage_nr = ? ORDER BY position').all(stageNr);
+      const rows = await h.all('SELECT * FROM ttt_results WHERE stage_nr = ? ORDER BY position', [stageNr]);
       for (const row of rows) {
         const pts = TTT_POINTS[row.position - 1];
         if (!pts) continue;
         for (const r of riders) {
           if (r.team_id === row.team_id && riderStarted(r, stageNr)) {
-            addPoints.run(stageNr, r.id, 'stage', pts);
+            await addPoints(r.id, 'stage', pts);
           }
         }
       }
       // Bij een TTT geen aparte teampunten voor etappewinst (de hele ploeg scoort al via de rituitslag).
     } else {
-      const rows = db.prepare('SELECT * FROM stage_results WHERE stage_nr = ? ORDER BY position').all(stageNr);
+      const rows = await h.all('SELECT * FROM stage_results WHERE stage_nr = ? ORDER BY position', [stageNr]);
       for (const row of rows) {
         const pts = STAGE_POINTS[row.position - 1];
         if (!pts) continue;
-        addPoints.run(stageNr, row.rider_id, 'stage', pts);
+        await addPoints(row.rider_id, 'stage', pts);
         if (row.position === 1) stageWinnerTeamId = riderById.get(row.rider_id)?.team_id ?? null;
       }
     }
 
     // 2. Klassementen na de etappe (top 5)
-    const standings = db.prepare('SELECT * FROM classification_standings WHERE stage_nr = ?').all(stageNr);
+    const standings = await h.all('SELECT * FROM classification_standings WHERE stage_nr = ?', [stageNr]);
     const leaders = {}; // classification -> rider
     for (const s of standings) {
       const pts = CLASS_POINTS_AFTER_STAGE[s.classification]?.[s.position - 1];
-      if (pts) addPoints.run(stageNr, s.rider_id, 'class', pts);
+      if (pts) await addPoints(s.rider_id, 'class', pts);
       if (s.position === 1) leaders[s.classification] = riderById.get(s.rider_id);
     }
 
     // 3. Teampunten (etappewinnaar-ploeg + klassementsleiders); renner moet gestart zijn
     const stageWinnerRiderId = stage.type === 'TTT'
       ? null
-      : db.prepare('SELECT rider_id FROM stage_results WHERE stage_nr = ? AND position = 1').get(stageNr)?.rider_id ?? null;
+      : (await h.get('SELECT rider_id FROM stage_results WHERE stage_nr = ? AND position = 1', [stageNr]))?.rider_id ?? null;
 
     for (const r of riders) {
       if (!riderStarted(r, stageNr)) continue;
@@ -90,11 +89,11 @@ export function processStage(stageNr) {
           teamPts += TEAM_POINTS_AFTER_STAGE[cls];
         }
       }
-      if (teamPts > 0) addPoints.run(stageNr, r.id, 'team', teamPts);
+      if (teamPts > 0) await addPoints(r.id, 'team', teamPts);
     }
 
     // 4. Scores per deelnemer: alleen de 9 opgestelde renners tellen; kopman x2 op etappe-uitslag
-    const pointRows = db.prepare('SELECT * FROM rider_points WHERE stage_nr = ?').all(stageNr);
+    const pointRows = await h.all('SELECT * FROM rider_points WHERE stage_nr = ?', [stageNr]);
     const ptsByRider = new Map();
     for (const p of pointRows) {
       const cur = ptsByRider.get(p.rider_id) || { stage: 0, class: 0, team: 0 };
@@ -102,15 +101,14 @@ export function processStage(stageNr) {
       ptsByRider.set(p.rider_id, cur);
     }
 
-    const lineupRows = db.prepare('SELECT * FROM lineups WHERE stage_nr = ?').all(stageNr);
+    const lineupRows = await h.all('SELECT * FROM lineups WHERE stage_nr = ?', [stageNr]);
     const byUser = new Map();
     for (const l of lineupRows) {
       if (!byUser.has(l.user_id)) byUser.set(l.user_id, []);
       byUser.get(l.user_id).push(l);
     }
 
-    const insertScore = db.prepare('INSERT INTO user_scores (user_id, stage_nr, points) VALUES (?, ?, ?)');
-    const allUsers = db.prepare('SELECT id FROM users').all();
+    const allUsers = await h.all('SELECT id FROM users');
     for (const u of allUsers) {
       const lineup = byUser.get(u.id) || [];
       let total = 0;
@@ -119,34 +117,30 @@ export function processStage(stageNr) {
         if (!p) continue;
         total += p.stage * (l.is_captain ? CAPTAIN_FACTOR : 1) + p.class + p.team;
       }
-      insertScore.run(u.id, stageNr, total);
+      await h.run('INSERT INTO user_scores (user_id, stage_nr, points) VALUES (?, ?, ?)', [u.id, stageNr, total]);
     }
 
-    db.prepare("UPDATE stages SET status = 'finished' WHERE nr = ?").run(stageNr);
+    await h.run("UPDATE stages SET status = 'finished' WHERE nr = ?", [stageNr]);
   });
-  tx();
 }
 
 // Verwerkt het eindklassement (stage_nr 0 in rider_points/user_scores).
-export function processFinal() {
-  const riders = allRiders();
+export async function processFinal() {
+  const riders = await all('SELECT * FROM riders');
   const riderById = new Map(riders.map((r) => [r.id, r]));
-  const lastStageNr = db.prepare('SELECT MAX(nr) AS m FROM stages').get().m;
+  const lastStageNr = (await get('SELECT MAX(nr) AS m FROM stages')).m;
 
-  const tx = db.transaction(() => {
-    db.prepare('DELETE FROM rider_points WHERE stage_nr = 0').run();
-    db.prepare('DELETE FROM user_scores WHERE stage_nr = 0').run();
+  await tx(async (h) => {
+    await h.run('DELETE FROM rider_points WHERE stage_nr = 0');
+    await h.run('DELETE FROM user_scores WHERE stage_nr = 0');
 
-    const addPoints = db.prepare(
-      'INSERT INTO rider_points (stage_nr, rider_id, category, points) VALUES (0, ?, ?, ?) ' +
-      'ON CONFLICT (stage_nr, rider_id, category) DO UPDATE SET points = points + excluded.points'
-    );
+    const addPoints = (riderId, category, points) => h.run(ADD_POINTS_SQL, [0, riderId, category, points]);
 
-    const standings = db.prepare('SELECT * FROM final_standings').all();
+    const standings = await h.all('SELECT * FROM final_standings');
     const winners = {};
     for (const s of standings) {
       const pts = FINAL_POINTS[s.classification]?.[s.position - 1];
-      if (pts) addPoints.run(s.rider_id, 'class', pts);
+      if (pts) await addPoints(s.rider_id, 'class', pts);
       if (s.position === 1) winners[s.classification] = riderById.get(s.rider_id);
     }
 
@@ -158,19 +152,18 @@ export function processFinal() {
         const w = winners[cls];
         if (w && w.team_id === r.team_id && w.id !== r.id) teamPts += FINAL_TEAM_POINTS[cls];
       }
-      if (teamPts > 0) addPoints.run(r.id, 'team', teamPts);
+      if (teamPts > 0) await addPoints(r.id, 'team', teamPts);
     }
 
     // Alle 20 teamrenners tellen mee voor het eindklassement (opstellen niet nodig)
-    const pointRows = db.prepare('SELECT * FROM rider_points WHERE stage_nr = 0').all();
+    const pointRows = await h.all('SELECT * FROM rider_points WHERE stage_nr = 0');
     const ptsByRider = new Map();
     for (const p of pointRows) {
       ptsByRider.set(p.rider_id, (ptsByRider.get(p.rider_id) || 0) + p.points);
     }
 
-    const insertScore = db.prepare('INSERT INTO user_scores (user_id, stage_nr, points) VALUES (?, 0, ?)');
-    const allUsers = db.prepare('SELECT id FROM users').all();
-    const teamRows = db.prepare('SELECT * FROM user_teams').all();
+    const allUsers = await h.all('SELECT id FROM users');
+    const teamRows = await h.all('SELECT * FROM user_teams');
     const teamByUser = new Map();
     for (const t of teamRows) {
       if (!teamByUser.has(t.user_id)) teamByUser.set(t.user_id, []);
@@ -180,8 +173,7 @@ export function processFinal() {
       const riderIds = teamByUser.get(u.id) || [];
       let total = 0;
       for (const id of riderIds) total += ptsByRider.get(id) || 0;
-      insertScore.run(u.id, total);
+      await h.run('INSERT INTO user_scores (user_id, stage_nr, points) VALUES (?, 0, ?)', [u.id, total]);
     }
   });
-  tx();
 }
