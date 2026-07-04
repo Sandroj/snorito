@@ -1,9 +1,9 @@
-# Haalt elke 10 minuten etappe-uitslagen op van ProCyclingStats en levert ze af
-# bij Snorito. PCS zit achter een Cloudflare-challenge, dus het ophalen gebeurt
-# met een echte headless browser (Playwright) in plaats van een kale fetch.
-# De aanroep van pcs-pending maakt de (slapende) Render-instantie ook wakker.
+# Haalt elke 10 minuten etappe-uitslagen op van letour.fr (officiële bron,
+# geen Cloudflare — kale fetch volstaat, geen browser nodig) en levert ze af
+# bij Snorito. De aanroep van pcs-pending maakt de (slapende) Render-instantie
+# ook wakker en vertelt welke etappes een uitslag nodig hebben.
 # Secrets: APP_URL (https://….onrender.com) en CRON_SECRET (ook in Render als env-var).
-name: PCS sync
+name: Uitslagen sync
 
 on:
   schedule:
@@ -33,16 +33,10 @@ jobs:
         with:
           node-version: 22
 
-      - name: Installeer Playwright + Chromium
-        if: steps.pending.outputs.count != '0'
-        run: |
-          npm install --no-save playwright
-          npx playwright install --with-deps chromium
-
-      - name: Haal PCS-pagina's op en lever ze af
+      - name: Haal letour.fr-klassementen op en lever ze af
         if: steps.pending.outputs.count != '0'
         env:
           APP_URL: ${{ secrets.APP_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
           PENDING: ${{ steps.pending.outputs.pending }}
-        run: node .github/scripts/pcs-fetch.mjs
+        run: node .github/scripts/letour-fetch.mjs

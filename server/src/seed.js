@@ -52,9 +52,9 @@ export async function runSeed({ quiet = false } = {}) {
 
     for (const r of ridersJson) {
       await h.run(`
-        INSERT INTO riders (id, name, team_id, nationality, age, price, type, qualities)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `, [r.riderId, r.naam, teamIdByName[r.team], r.nationaliteit, r.leeftijd, r.marktwaarde, r.type, JSON.stringify(r.kwaliteiten)]);
+        INSERT INTO riders (id, name, team_id, nationality, age, price, type, qualities, bib)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `, [r.riderId, r.naam, teamIdByName[r.team], r.nationaliteit, r.leeftijd, r.marktwaarde, r.type, JSON.stringify(r.kwaliteiten), r.bib ?? null]);
     }
 
     // --- etappes ---------------------------------------------------------------

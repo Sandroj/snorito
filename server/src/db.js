@@ -109,7 +109,8 @@ CREATE TABLE IF NOT EXISTS riders (
   price INTEGER NOT NULL,
   type TEXT,
   qualities TEXT NOT NULL DEFAULT '{}',
-  last_started_stage INTEGER
+  last_started_stage INTEGER,
+  bib INTEGER
 );
 
 CREATE TABLE IF NOT EXISTS stages (
@@ -213,6 +214,8 @@ CREATE TABLE IF NOT EXISTS config (
 
 export async function initSchema() {
   await pool.query(SCHEMA_SQL);
+  // Migratie voor bestaande databases van vóór de letour.fr-sync.
+  await pool.query('ALTER TABLE riders ADD COLUMN IF NOT EXISTS bib INTEGER');
 }
 
 export const BUDGET = 45_000_000;

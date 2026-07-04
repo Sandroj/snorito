@@ -21,7 +21,8 @@
         "type": "Kasseien",
         "value": 8
       }
-    ]
+    ],
+    "bib": 105
   },
   {
     "eventRiderId": 213260,
@@ -61,7 +62,8 @@
         "type": "Kasseien",
         "value": 10
       }
-    ]
+    ],
+    "bib": 101
   },
   {
     "eventRiderId": 213261,
@@ -76,7 +78,8 @@
     "price": 500000,
     "type": 6,
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 108
   },
   {
     "eventRiderId": 213262,
@@ -91,7 +94,8 @@
     "price": 500000,
     "type": 6,
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 107
   },
   {
     "eventRiderId": 213263,
@@ -119,7 +123,8 @@
         "type": "Heuvels",
         "value": 6
       }
-    ]
+    ],
+    "bib": 77
   },
   {
     "eventRiderId": 213264,
@@ -155,7 +160,8 @@
         "type": "Tijdrijden",
         "value": 4
       }
-    ]
+    ],
+    "bib": 71
   },
   {
     "eventRiderId": 213265,
@@ -187,7 +193,8 @@
         "type": "Kasseien",
         "value": 4
       }
-    ]
+    ],
+    "bib": 75
   },
   {
     "eventRiderId": 213267,
@@ -215,7 +222,8 @@
         "type": "Kasseien",
         "value": 2
       }
-    ]
+    ],
+    "bib": 55
   },
   {
     "eventRiderId": 213268,
@@ -247,7 +255,8 @@
         "type": "Kasseien",
         "value": 6
       }
-    ]
+    ],
+    "bib": 52
   },
   {
     "eventRiderId": 213269,
@@ -267,7 +276,8 @@
         "type": "Heuvels",
         "value": 6
       }
-    ]
+    ],
+    "bib": 54
   },
   {
     "eventRiderId": 213271,
@@ -299,7 +309,8 @@
         "type": "Tijdrijden",
         "value": 9
       }
-    ]
+    ],
+    "bib": 51
   },
   {
     "eventRiderId": 213272,
@@ -335,7 +346,8 @@
         "type": "Tijdrijden",
         "value": 8
       }
-    ]
+    ],
+    "bib": 44
   },
   {
     "eventRiderId": 213273,
@@ -367,7 +379,8 @@
         "type": "Kasseien",
         "value": 4
       }
-    ]
+    ],
+    "bib": 42
   },
   {
     "eventRiderId": 213275,
@@ -403,7 +416,8 @@
         "type": "Tijdrijden",
         "value": 6
       }
-    ]
+    ],
+    "bib": 41
   },
   {
     "eventRiderId": 213277,
@@ -435,7 +449,8 @@
         "type": "Tijdrijden",
         "value": 4
       }
-    ]
+    ],
+    "bib": 186
   },
   {
     "eventRiderId": 213278,
@@ -471,7 +486,8 @@
         "type": "Kasseien",
         "value": 6
       }
-    ]
+    ],
+    "bib": 84
   },
   {
     "eventRiderId": 213280,
@@ -507,7 +523,8 @@
         "type": "Kasseien",
         "value": 2
       }
-    ]
+    ],
+    "bib": 86
   },
   {
     "eventRiderId": 213281,
@@ -543,7 +560,8 @@
         "type": "Tijdrijden",
         "value": 6
       }
-    ]
+    ],
+    "bib": 88
   },
   {
     "eventRiderId": 213282,
@@ -575,7 +593,8 @@
         "type": "Tijdrijden",
         "value": 6
       }
-    ]
+    ],
+    "bib": 85
   },
   {
     "eventRiderId": 213283,
@@ -607,7 +626,8 @@
         "type": "Tijdrijden",
         "value": 2
       }
-    ]
+    ],
+    "bib": 82
   },
   {
     "eventRiderId": 213285,
@@ -639,7 +659,8 @@
         "type": "Tijdrijden",
         "value": 6
       }
-    ]
+    ],
+    "bib": 31
   },
   {
     "eventRiderId": 213286,
@@ -675,7 +696,8 @@
         "type": "Kasseien",
         "value": 10
       }
-    ]
+    ],
+    "bib": 33
   },
   {
     "eventRiderId": 213287,
@@ -707,7 +729,8 @@
         "type": "Tijdrijden",
         "value": 2
       }
-    ]
+    ],
+    "bib": 37
   },
   {
     "eventRiderId": 213288,
@@ -743,7 +766,8 @@
         "type": "Tijdrijden",
         "value": 8
       }
-    ]
+    ],
+    "bib": 35
   },
   {
     "eventRiderId": 213289,
@@ -779,7 +803,8 @@
         "type": "Kasseien",
         "value": 2
       }
-    ]
+    ],
+    "bib": 34
   },
   {
     "eventRiderId": 213291,
@@ -811,7 +836,8 @@
         "type": "Kasseien",
         "value": 8
       }
-    ]
+    ],
+    "bib": 151
   },
   {
     "eventRiderId": 213292,
@@ -843,7 +869,8 @@
         "type": "Tijdrijden",
         "value": 4
       }
-    ]
+    ],
+    "bib": 156
   },
   {
     "eventRiderId": 213293,
@@ -871,7 +898,8 @@
         "type": "Tijdrijden",
         "value": 2
       }
-    ]
+    ],
+    "bib": 158
   },
   {
     "eventRiderId": 213294,
@@ -895,7 +923,8 @@
         "type": "Klimmer",
         "value": 6
       }
-    ]
+    ],
+    "bib": 141
   },
   {
     "eventRiderId": 213295,
@@ -923,7 +952,8 @@
         "type": "Tijdrijden",
         "value": 2
       }
-    ]
+    ],
+    "bib": 148
   },
   {
     "eventRiderId": 213297,
@@ -947,7 +977,8 @@
         "type": "Tijdrijden",
         "value": 2
       }
-    ]
+    ],
+    "bib": 142
   },
   {
     "eventRiderId": 213298,
@@ -983,7 +1014,8 @@
         "type": "Kasseien",
         "value": 4
       }
-    ]
+    ],
+    "bib": 131
   },
   {
     "eventRiderId": 213299,
@@ -1007,7 +1039,8 @@
         "type": "Kasseien",
         "value": 2
       }
-    ]
+    ],
+    "bib": 137
   },
   {
     "eventRiderId": 213300,
@@ -1043,7 +1076,8 @@
         "type": "Tijdrijden",
         "value": 10
       }
-    ]
+    ],
+    "bib": 21
   },
   {
     "eventRiderId": 213301,
@@ -1075,7 +1109,8 @@
         "type": "Tijdrijden",
         "value": 4
       }
-    ]
+    ],
+    "bib": 25
   },
   {
     "eventRiderId": 213302,
@@ -1103,7 +1138,8 @@
         "type": "Tijdrijden",
         "value": 2
       }
-    ]
+    ],
+    "bib": 22
   },
   {
     "eventRiderId": 213303,
@@ -1135,7 +1171,8 @@
         "type": "Tijdrijden",
         "value": 6
       }
-    ]
+    ],
+    "bib": 28
   },
   {
     "eventRiderId": 213304,
@@ -1155,7 +1192,8 @@
         "type": "Tijdrijden",
         "value": 2
       }
-    ]
+    ],
+    "bib": 23
   },
   {
     "eventRiderId": 213306,
@@ -1187,7 +1225,8 @@
         "type": "Tijdrijden",
         "value": 4
       }
-    ]
+    ],
+    "bib": 24
   },
   {
     "eventRiderId": 213310,
@@ -1219,7 +1258,8 @@
         "type": "Kasseien",
         "value": 4
       }
-    ]
+    ],
+    "bib": 26
   },
   {
     "eventRiderId": 213311,
@@ -1234,7 +1274,8 @@
     "price": 500000,
     "type": 6,
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 93
   },
   {
     "eventRiderId": 213313,
@@ -1258,7 +1299,8 @@
         "type": "Kasseien",
         "value": 2
       }
-    ]
+    ],
+    "bib": 91
   },
   {
     "eventRiderId": 213314,
@@ -1286,7 +1328,8 @@
         "type": "Kasseien",
         "value": 8
       }
-    ]
+    ],
+    "bib": 94
   },
   {
     "eventRiderId": 213315,
@@ -1322,7 +1365,8 @@
         "type": "Tijdrijden",
         "value": 4
       }
-    ]
+    ],
+    "bib": 97
   },
   {
     "eventRiderId": 213316,
@@ -1342,7 +1386,8 @@
         "type": "Klimmer",
         "value": 2
       }
-    ]
+    ],
+    "bib": 98
   },
   {
     "eventRiderId": 213317,
@@ -1382,7 +1427,8 @@
         "type": "Kasseien",
         "value": 4
       }
-    ]
+    ],
+    "bib": 115
   },
   {
     "eventRiderId": 213318,
@@ -1406,7 +1452,8 @@
         "type": "Heuvels",
         "value": 4
       }
-    ]
+    ],
+    "bib": 117
   },
   {
     "eventRiderId": 213319,
@@ -1426,7 +1473,8 @@
         "type": "Sprinten",
         "value": 6
       }
-    ]
+    ],
+    "bib": 112
   },
   {
     "eventRiderId": 213320,
@@ -1454,7 +1502,8 @@
         "type": "Tijdrijden",
         "value": 2
       }
-    ]
+    ],
+    "bib": 213
   },
   {
     "eventRiderId": 213321,
@@ -1482,7 +1531,8 @@
         "type": "Tijdrijden",
         "value": 4
       }
-    ]
+    ],
+    "bib": 211
   },
   {
     "eventRiderId": 213322,
@@ -1497,7 +1547,8 @@
     "price": 500000,
     "type": 6,
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 218
   },
   {
     "eventRiderId": 213323,
@@ -1533,7 +1584,8 @@
         "type": "Tijdrijden",
         "value": 4
       }
-    ]
+    ],
+    "bib": 11
   },
   {
     "eventRiderId": 213325,
@@ -1569,7 +1621,8 @@
         "type": "Kasseien",
         "value": 6
       }
-    ]
+    ],
+    "bib": 16
   },
   {
     "eventRiderId": 213326,
@@ -1593,7 +1646,8 @@
         "type": "Tijdrijden",
         "value": 2
       }
-    ]
+    ],
+    "bib": 13
   },
   {
     "eventRiderId": 213327,
@@ -1613,7 +1667,8 @@
         "type": "Heuvels",
         "value": 6
       }
-    ]
+    ],
+    "bib": 14
   },
   {
     "eventRiderId": 213328,
@@ -1641,7 +1696,8 @@
         "type": "Tijdrijden",
         "value": 4
       }
-    ]
+    ],
+    "bib": 17
   },
   {
     "eventRiderId": 213330,
@@ -1661,7 +1717,8 @@
         "type": "Heuvels",
         "value": 8
       }
-    ]
+    ],
+    "bib": 12
   },
   {
     "eventRiderId": 213331,
@@ -1701,7 +1758,8 @@
         "type": "Kasseien",
         "value": 10
       }
-    ]
+    ],
+    "bib": 1
   },
   {
     "eventRiderId": 213332,
@@ -1737,7 +1795,8 @@
         "type": "Tijdrijden",
         "value": 8
       }
-    ]
+    ],
+    "bib": 2
   },
   {
     "eventRiderId": 213333,
@@ -1773,7 +1832,8 @@
         "type": "Kasseien",
         "value": 6
       }
-    ]
+    ],
+    "bib": 7
   },
   {
     "eventRiderId": 213335,
@@ -1809,7 +1869,8 @@
         "type": "Tijdrijden",
         "value": 6
       }
-    ]
+    ],
+    "bib": 4
   },
   {
     "eventRiderId": 213336,
@@ -1845,7 +1906,8 @@
         "type": "Tijdrijden",
         "value": 6
       }
-    ]
+    ],
+    "bib": 8
   },
   {
     "eventRiderId": 213337,
@@ -1865,7 +1927,8 @@
         "type": "Kasseien",
         "value": 6
       }
-    ]
+    ],
+    "bib": 6
   },
   {
     "eventRiderId": 213339,
@@ -1905,7 +1968,8 @@
         "type": "Kasseien",
         "value": 2
       }
-    ]
+    ],
+    "bib": 124
   },
   {
     "eventRiderId": 213340,
@@ -1937,7 +2001,8 @@
         "type": "Tijdrijden",
         "value": 2
       }
-    ]
+    ],
+    "bib": 121
   },
   {
     "eventRiderId": 213341,
@@ -1965,7 +2030,8 @@
         "type": "Kasseien",
         "value": 6
       }
-    ]
+    ],
+    "bib": 66
   },
   {
     "eventRiderId": 213342,
@@ -1997,7 +2063,8 @@
         "type": "Tijdrijden",
         "value": 4
       }
-    ]
+    ],
+    "bib": 61
   },
   {
     "eventRiderId": 213343,
@@ -2021,7 +2088,8 @@
         "type": "Klimmer",
         "value": 4
       }
-    ]
+    ],
+    "bib": 65
   },
   {
     "eventRiderId": 213345,
@@ -2045,7 +2113,8 @@
         "type": "Tijdrijden",
         "value": 2
       }
-    ]
+    ],
+    "bib": 166
   },
   {
     "eventRiderId": 213346,
@@ -2065,7 +2134,8 @@
         "type": "Sprinten",
         "value": 6
       }
-    ]
+    ],
+    "bib": 165
   },
   {
     "eventRiderId": 213349,
@@ -2085,7 +2155,8 @@
         "type": "Punchen",
         "value": 2
       }
-    ]
+    ],
+    "bib": 167
   },
   {
     "eventRiderId": 213350,
@@ -2113,7 +2184,8 @@
         "type": "Tijdrijden",
         "value": 4
       }
-    ]
+    ],
+    "bib": 163
   },
   {
     "eventRiderId": 213351,
@@ -2145,7 +2217,8 @@
         "type": "Tijdrijden",
         "value": 4
       }
-    ]
+    ],
+    "bib": 161
   },
   {
     "eventRiderId": 213352,
@@ -2181,7 +2254,8 @@
         "type": "Kasseien",
         "value": 4
       }
-    ]
+    ],
+    "bib": 191
   },
   {
     "eventRiderId": 213354,
@@ -2209,7 +2283,8 @@
         "type": "Tijdrijden",
         "value": 4
       }
-    ]
+    ],
+    "bib": 196
   },
   {
     "eventRiderId": 213355,
@@ -2245,7 +2320,8 @@
         "type": "Kasseien",
         "value": 4
       }
-    ]
+    ],
+    "bib": 197
   },
   {
     "eventRiderId": 213356,
@@ -2269,7 +2345,8 @@
         "type": "Tijdrijden",
         "value": 2
       }
-    ]
+    ],
+    "bib": 195
   },
   {
     "eventRiderId": 213357,
@@ -2297,7 +2374,8 @@
         "type": "Tijdrijden",
         "value": 4
       }
-    ]
+    ],
+    "bib": 201
   },
   {
     "eventRiderId": 213358,
@@ -2312,7 +2390,8 @@
     "price": 500000,
     "type": 6,
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 224
   },
   {
     "eventRiderId": 213359,
@@ -2352,7 +2431,8 @@
         "type": "Kasseien",
         "value": 4
       }
-    ]
+    ],
+    "bib": 171
   },
   {
     "eventRiderId": 213360,
@@ -2388,7 +2468,8 @@
         "type": "Kasseien",
         "value": 2
       }
-    ]
+    ],
+    "bib": 178
   },
   {
     "eventRiderId": 213362,
@@ -2416,7 +2497,8 @@
         "type": "Tijdrijden",
         "value": 4
       }
-    ]
+    ],
+    "bib": 111
   },
   {
     "eventRiderId": 213363,
@@ -2431,7 +2513,8 @@
     "price": 500000,
     "type": 6,
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 43
   },
   {
     "eventRiderId": 213364,
@@ -2455,7 +2538,8 @@
         "type": "Kasseien",
         "value": 6
       }
-    ]
+    ],
+    "bib": 5
   },
   {
     "eventRiderId": 213365,
@@ -2479,7 +2563,8 @@
         "type": "Kasseien",
         "value": 2
       }
-    ]
+    ],
+    "bib": 164
   },
   {
     "eventRiderId": 213366,
@@ -2503,7 +2588,8 @@
         "type": "Kasseien",
         "value": 2
       }
-    ]
+    ],
+    "bib": 162
   },
   {
     "eventRiderId": 213367,
@@ -2523,7 +2609,8 @@
         "type": "Kasseien",
         "value": 2
       }
-    ]
+    ],
+    "bib": 96
   },
   {
     "eventRiderId": 213368,
@@ -2551,7 +2638,8 @@
         "type": "Kasseien",
         "value": 6
       }
-    ]
+    ],
+    "bib": 95
   },
   {
     "eventRiderId": 213369,
@@ -2579,7 +2667,8 @@
         "type": "Tijdrijden",
         "value": 4
       }
-    ]
+    ],
+    "bib": 118
   },
   {
     "eventRiderId": 213370,
@@ -2607,7 +2696,8 @@
         "type": "Tijdrijden",
         "value": 2
       }
-    ]
+    ],
+    "bib": 168
   },
   {
     "eventRiderId": 213371,
@@ -2622,7 +2712,8 @@
     "price": 750000,
     "type": 6,
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 15
   },
   {
     "eventRiderId": 213372,
@@ -2646,7 +2737,8 @@
         "type": "Klimmer",
         "value": 2
       }
-    ]
+    ],
+    "bib": 18
   },
   {
     "eventRiderId": 213373,
@@ -2661,7 +2753,8 @@
     "price": 500000,
     "type": 6,
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 126
   },
   {
     "eventRiderId": 213374,
@@ -2693,7 +2786,8 @@
         "type": "Kasseien",
         "value": 2
       }
-    ]
+    ],
+    "bib": 128
   },
   {
     "eventRiderId": 213375,
@@ -2721,7 +2815,8 @@
         "type": "Tijdrijden",
         "value": 2
       }
-    ]
+    ],
+    "bib": 123
   },
   {
     "eventRiderId": 213376,
@@ -2745,7 +2840,8 @@
         "type": "Kasseien",
         "value": 2
       }
-    ]
+    ],
+    "bib": 122
   },
   {
     "eventRiderId": 213377,
@@ -2765,7 +2861,8 @@
         "type": "Klimmer",
         "value": 2
       }
-    ]
+    ],
+    "bib": 127
   },
   {
     "eventRiderId": 213378,
@@ -2789,7 +2886,8 @@
         "type": "Tijdrijden",
         "value": 4
       }
-    ]
+    ],
+    "bib": 174
   },
   {
     "eventRiderId": 213379,
@@ -2809,7 +2907,8 @@
         "type": "Sprinten",
         "value": 4
       }
-    ]
+    ],
+    "bib": 64
   },
   {
     "eventRiderId": 213380,
@@ -2824,7 +2923,8 @@
     "price": 500000,
     "type": 6,
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 132
   },
   {
     "eventRiderId": 213381,
@@ -2852,7 +2952,8 @@
         "type": "Tijdrijden",
         "value": 2
       }
-    ]
+    ],
+    "bib": 136
   },
   {
     "eventRiderId": 213382,
@@ -2867,7 +2968,8 @@
     "price": 500000,
     "type": "Knecht",
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 134
   },
   {
     "eventRiderId": 213383,
@@ -2887,7 +2989,8 @@
         "type": "Kasseien",
         "value": 2
       }
-    ]
+    ],
+    "bib": 135
   },
   {
     "eventRiderId": 213384,
@@ -2919,7 +3022,8 @@
         "type": "Tijdrijden",
         "value": 4
       }
-    ]
+    ],
+    "bib": 133
   },
   {
     "eventRiderId": 213385,
@@ -2943,7 +3047,8 @@
         "type": "Kasseien",
         "value": 2
       }
-    ]
+    ],
+    "bib": 138
   },
   {
     "eventRiderId": 213386,
@@ -2967,7 +3072,8 @@
         "type": "Kasseien",
         "value": 2
       }
-    ]
+    ],
+    "bib": 113
   },
   {
     "eventRiderId": 213387,
@@ -2991,7 +3097,8 @@
         "type": "Tijdrijden",
         "value": 2
       }
-    ]
+    ],
+    "bib": 114
   },
   {
     "eventRiderId": 213388,
@@ -3006,7 +3113,8 @@
     "price": 500000,
     "type": "Aanvaller",
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 116
   },
   {
     "eventRiderId": 213389,
@@ -3021,7 +3129,8 @@
     "price": 500000,
     "type": "Knecht",
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 225
   },
   {
     "eventRiderId": 213390,
@@ -3036,7 +3145,8 @@
     "price": 500000,
     "type": 6,
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 27
   },
   {
     "eventRiderId": 213391,
@@ -3064,7 +3174,8 @@
         "type": "Kasseien",
         "value": 4
       }
-    ]
+    ],
+    "bib": 36
   },
   {
     "eventRiderId": 213392,
@@ -3084,7 +3195,8 @@
         "type": "Klimmer",
         "value": 4
       }
-    ]
+    ],
+    "bib": 38
   },
   {
     "eventRiderId": 213393,
@@ -3116,7 +3228,8 @@
         "type": "Tijdrijden",
         "value": 4
       }
-    ]
+    ],
+    "bib": 32
   },
   {
     "eventRiderId": 213394,
@@ -3140,7 +3253,8 @@
         "type": "Kasseien",
         "value": 2
       }
-    ]
+    ],
+    "bib": 53
   },
   {
     "eventRiderId": 213395,
@@ -3168,7 +3282,8 @@
         "type": "Tijdrijden",
         "value": 2
       }
-    ]
+    ],
+    "bib": 56
   },
   {
     "eventRiderId": 213396,
@@ -3183,7 +3298,8 @@
     "price": 500000,
     "type": 6,
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 57
   },
   {
     "eventRiderId": 213397,
@@ -3211,7 +3327,8 @@
         "type": "Tijdrijden",
         "value": 2
       }
-    ]
+    ],
+    "bib": 58
   },
   {
     "eventRiderId": 213398,
@@ -3239,7 +3356,8 @@
         "type": "Kasseien",
         "value": 4
       }
-    ]
+    ],
+    "bib": 214
   },
   {
     "eventRiderId": 213399,
@@ -3254,7 +3372,8 @@
     "price": 500000,
     "type": 6,
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 212
   },
   {
     "eventRiderId": 213400,
@@ -3269,7 +3388,8 @@
     "price": 500000,
     "type": 6,
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 216
   },
   {
     "eventRiderId": 213401,
@@ -3284,7 +3404,8 @@
     "price": 500000,
     "type": 6,
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 217
   },
   {
     "eventRiderId": 213402,
@@ -3299,7 +3420,8 @@
     "price": 500000,
     "type": 6,
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 215
   },
   {
     "eventRiderId": 213403,
@@ -3319,7 +3441,8 @@
         "type": "Heuvels",
         "value": 2
       }
-    ]
+    ],
+    "bib": 205
   },
   {
     "eventRiderId": 213404,
@@ -3334,7 +3457,8 @@
     "price": 500000,
     "type": 6,
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 203
   },
   {
     "eventRiderId": 213405,
@@ -3349,7 +3473,8 @@
     "price": 500000,
     "type": 6,
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 202
   },
   {
     "eventRiderId": 213406,
@@ -3364,7 +3489,8 @@
     "price": 500000,
     "type": 6,
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 206
   },
   {
     "eventRiderId": 213407,
@@ -3379,7 +3505,8 @@
     "price": 500000,
     "type": 6,
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 208
   },
   {
     "eventRiderId": 213408,
@@ -3394,7 +3521,8 @@
     "price": 500000,
     "type": 6,
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 204
   },
   {
     "eventRiderId": 213409,
@@ -3422,7 +3550,8 @@
         "type": "Kasseien",
         "value": 4
       }
-    ]
+    ],
+    "bib": 207
   },
   {
     "eventRiderId": 213410,
@@ -3437,7 +3566,8 @@
     "price": 500000,
     "type": 6,
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 228
   },
   {
     "eventRiderId": 213411,
@@ -3452,7 +3582,8 @@
     "price": 500000,
     "type": 6,
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 227
   },
   {
     "eventRiderId": 213412,
@@ -3484,7 +3615,8 @@
         "type": "Tijdrijden",
         "value": 4
       }
-    ]
+    ],
+    "bib": 226
   },
   {
     "eventRiderId": 213413,
@@ -3508,7 +3640,8 @@
         "type": "Kasseien",
         "value": 2
       }
-    ]
+    ],
+    "bib": 221
   },
   {
     "eventRiderId": 213414,
@@ -3528,7 +3661,8 @@
         "type": "Klimmer",
         "value": 2
       }
-    ]
+    ],
+    "bib": 223
   },
   {
     "eventRiderId": 213415,
@@ -3548,7 +3682,8 @@
         "type": "Heuvels",
         "value": 2
       }
-    ]
+    ],
+    "bib": 222
   },
   {
     "eventRiderId": 213416,
@@ -3563,7 +3698,8 @@
     "price": 500000,
     "type": 6,
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 198
   },
   {
     "eventRiderId": 213417,
@@ -3591,7 +3727,8 @@
         "type": "Tijdrijden",
         "value": 6
       }
-    ]
+    ],
+    "bib": 194
   },
   {
     "eventRiderId": 213418,
@@ -3611,7 +3748,8 @@
         "type": "Kasseien",
         "value": 2
       }
-    ]
+    ],
+    "bib": 193
   },
   {
     "eventRiderId": 213419,
@@ -3631,7 +3769,8 @@
         "type": "Sprinten",
         "value": 4
       }
-    ]
+    ],
+    "bib": 192
   },
   {
     "eventRiderId": 213420,
@@ -3646,7 +3785,8 @@
     "price": 500000,
     "type": 6,
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 157
   },
   {
     "eventRiderId": 213421,
@@ -3661,7 +3801,8 @@
     "price": 500000,
     "type": 6,
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 154
   },
   {
     "eventRiderId": 213422,
@@ -3676,7 +3817,8 @@
     "price": 500000,
     "type": 6,
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 155
   },
   {
     "eventRiderId": 213423,
@@ -3700,7 +3842,8 @@
         "type": "Tijdrijden",
         "value": 2
       }
-    ]
+    ],
+    "bib": 153
   },
   {
     "eventRiderId": 213424,
@@ -3724,7 +3867,8 @@
         "type": "Tijdrijden",
         "value": 2
       }
-    ]
+    ],
+    "bib": 67
   },
   {
     "eventRiderId": 213425,
@@ -3739,7 +3883,8 @@
     "price": 500000,
     "type": 6,
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 63
   },
   {
     "eventRiderId": 213426,
@@ -3771,7 +3916,8 @@
         "type": "Kasseien",
         "value": 2
       }
-    ]
+    ],
+    "bib": 62
   },
   {
     "eventRiderId": 213427,
@@ -3807,7 +3953,8 @@
         "type": "Tijdrijden",
         "value": 4
       }
-    ]
+    ],
+    "bib": 3
   },
   {
     "eventRiderId": 213428,
@@ -3822,7 +3969,8 @@
     "price": 500000,
     "type": 6,
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 104
   },
   {
     "eventRiderId": 213429,
@@ -3837,7 +3985,8 @@
     "price": 500000,
     "type": 6,
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 102
   },
   {
     "eventRiderId": 213430,
@@ -3861,7 +4010,8 @@
         "type": "Kasseien",
         "value": 2
       }
-    ]
+    ],
+    "bib": 106
   },
   {
     "eventRiderId": 213431,
@@ -3885,7 +4035,8 @@
         "type": "Kasseien",
         "value": 2
       }
-    ]
+    ],
+    "bib": 103
   },
   {
     "eventRiderId": 213432,
@@ -3900,7 +4051,8 @@
     "price": 500000,
     "type": 6,
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 76
   },
   {
     "eventRiderId": 213433,
@@ -3920,7 +4072,8 @@
         "type": "Heuvels",
         "value": 2
       }
-    ]
+    ],
+    "bib": 74
   },
   {
     "eventRiderId": 213434,
@@ -3956,7 +4109,8 @@
         "type": "Tijdrijden",
         "value": 2
       }
-    ]
+    ],
+    "bib": 73
   },
   {
     "eventRiderId": 213435,
@@ -3976,7 +4130,8 @@
         "type": "Sprinten",
         "value": 6
       }
-    ]
+    ],
+    "bib": 72
   },
   {
     "eventRiderId": 213436,
@@ -3991,7 +4146,8 @@
     "price": 500000,
     "type": 6,
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 78
   },
   {
     "eventRiderId": 213437,
@@ -4006,7 +4162,8 @@
     "price": 500000,
     "type": 6,
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 152
   },
   {
     "eventRiderId": 213438,
@@ -4034,7 +4191,8 @@
         "type": "Tijdrijden",
         "value": 6
       }
-    ]
+    ],
+    "bib": 181
   },
   {
     "eventRiderId": 213439,
@@ -4049,7 +4207,8 @@
     "price": 500000,
     "type": 6,
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 184
   },
   {
     "eventRiderId": 213440,
@@ -4064,7 +4223,8 @@
     "price": 500000,
     "type": 6,
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 188
   },
   {
     "eventRiderId": 213441,
@@ -4088,7 +4248,8 @@
         "type": "Tijdrijden",
         "value": 2
       }
-    ]
+    ],
+    "bib": 187
   },
   {
     "eventRiderId": 213442,
@@ -4103,7 +4264,8 @@
     "price": 500000,
     "type": 6,
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 185
   },
   {
     "eventRiderId": 213443,
@@ -4118,7 +4280,8 @@
     "price": 500000,
     "type": 6,
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 183
   },
   {
     "eventRiderId": 213444,
@@ -4138,7 +4301,8 @@
         "type": "Tijdrijden",
         "value": 2
       }
-    ]
+    ],
+    "bib": 182
   },
   {
     "eventRiderId": 213445,
@@ -4166,7 +4330,8 @@
         "type": "Kasseien",
         "value": 2
       }
-    ]
+    ],
+    "bib": 47
   },
   {
     "eventRiderId": 213446,
@@ -4181,7 +4346,8 @@
     "price": 500000,
     "type": 6,
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 48
   },
   {
     "eventRiderId": 213447,
@@ -4201,7 +4367,8 @@
         "type": "Klimmer",
         "value": 2
       }
-    ]
+    ],
+    "bib": 46
   },
   {
     "eventRiderId": 213448,
@@ -4216,7 +4383,8 @@
     "price": 500000,
     "type": 6,
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 45
   },
   {
     "eventRiderId": 213449,
@@ -4231,7 +4399,8 @@
     "price": 500000,
     "type": 6,
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 68
   },
   {
     "eventRiderId": 213450,
@@ -4246,7 +4415,8 @@
     "price": 500000,
     "type": 6,
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 125
   },
   {
     "eventRiderId": 213451,
@@ -4261,7 +4431,8 @@
     "price": 500000,
     "type": 6,
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 145
   },
   {
     "eventRiderId": 213452,
@@ -4276,7 +4447,8 @@
     "price": 500000,
     "type": 6,
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 143
   },
   {
     "eventRiderId": 213453,
@@ -4304,7 +4476,8 @@
         "type": "Tijdrijden",
         "value": 2
       }
-    ]
+    ],
+    "bib": 146
   },
   {
     "eventRiderId": 213454,
@@ -4319,7 +4492,8 @@
     "price": 500000,
     "type": 6,
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 147
   },
   {
     "eventRiderId": 213455,
@@ -4339,7 +4513,8 @@
         "type": "Heuvels",
         "value": 2
       }
-    ]
+    ],
+    "bib": 144
   },
   {
     "eventRiderId": 213456,
@@ -4359,7 +4534,8 @@
         "type": "Kasseien",
         "value": 2
       }
-    ]
+    ],
+    "bib": 92
   },
   {
     "eventRiderId": 213457,
@@ -4379,7 +4555,8 @@
         "type": "Heuvels",
         "value": 10
       }
-    ]
+    ],
+    "bib": 87
   },
   {
     "eventRiderId": 213458,
@@ -4415,7 +4592,8 @@
         "type": "Tijdrijden",
         "value": 4
       }
-    ]
+    ],
+    "bib": 83
   },
   {
     "eventRiderId": 213459,
@@ -4451,7 +4629,8 @@
         "type": "Tijdrijden",
         "value": 4
       }
-    ]
+    ],
+    "bib": 81
   },
   {
     "eventRiderId": 213460,
@@ -4479,7 +4658,8 @@
         "type": "Tijdrijden",
         "value": 2
       }
-    ]
+    ],
+    "bib": 176
   },
   {
     "eventRiderId": 213461,
@@ -4499,7 +4679,8 @@
         "type": "Heuvels",
         "value": 2
       }
-    ]
+    ],
+    "bib": 172
   },
   {
     "eventRiderId": 213462,
@@ -4523,7 +4704,8 @@
         "type": "Tijdrijden",
         "value": 2
       }
-    ]
+    ],
+    "bib": 173
   },
   {
     "eventRiderId": 213463,
@@ -4547,7 +4729,8 @@
         "type": "Heuvels",
         "value": 2
       }
-    ]
+    ],
+    "bib": 175
   },
   {
     "eventRiderId": 213464,
@@ -4562,6 +4745,7 @@
     "price": 500000,
     "type": 6,
     "status": 1,
-    "qualities": []
+    "qualities": [],
+    "bib": 177
   }
 ]

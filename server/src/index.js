@@ -12,7 +12,7 @@ import {
   STAGE_POINTS, TTT_POINTS, CLASS_POINTS_AFTER_STAGE, TEAM_POINTS_AFTER_STAGE, FINAL_TEAM_POINTS,
 } from './points.js';
 import { ensureSeeded } from './seed.js';
-import { runSync, syncTick, importStageHtml, noteSyncError, saveStageResult } from './sync.js';
+import { runSync, syncTick, importStageHtml, importLetourRankings, noteSyncError, saveStageResult } from './sync.js';
 import { sendPasswordResetMail } from './mail.js';
 import { rateLimit } from './ratelimit.js';
 
@@ -774,6 +774,23 @@ app.post('/api/cron/pcs-html', ah(async (req, res) => {
   if (typeof html !== 'string' || !html) return res.status(400).json({ error: 'html ontbreekt' });
   const report = await importStageHtml(stageNr, html);
   console.log('PCS-sync:', report);
+  res.json({ ok: true, report });
+}));
+
+// Primaire uitslagenroute: de Action levert per etappe de letour.fr-
+// klassementsfragmenten aan (ite/itg/ipg/img/ijg/ete). PCS blijft als fallback.
+app.post('/api/cron/letour-html', ah(async (req, res) => {
+  if (!cronAuthorized(req, res)) return;
+  const { stageNr, fragments, error } = req.body || {};
+  if (!Number.isInteger(stageNr)) return res.status(400).json({ error: 'stageNr ontbreekt' });
+  if (error) {
+    await noteSyncError(stageNr, String(error).slice(0, 500));
+    console.log(`letour-sync: etappe ${stageNr}: fetch-fout uit Action — ${error}`);
+    return res.json({ ok: true, noted: true });
+  }
+  if (!fragments || typeof fragments !== 'object') return res.status(400).json({ error: 'fragments ontbreekt' });
+  const report = await importLetourRankings(stageNr, fragments);
+  console.log('letour-sync:', report);
   res.json({ ok: true, report });
 }));
 

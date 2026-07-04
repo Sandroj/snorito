@@ -4,6 +4,7 @@
 import { get, all, run, tx } from './db.js';
 import { processStage } from './points.js';
 import { fetchStagePage, parseStagePage, parseTttResults, matchByName, matchTeamsByName } from './pcs.js';
+import { parseRiderRanking, parseTeamRanking, TEAM_ALIASES } from './letour.js';
 
 // Etappestarttijden in data/stages_tdf2026.json zijn lokale tijd zonder zone;
 // de hele Tour 2026 valt in de Midden-Europese zomertijd.
@@ -153,6 +154,74 @@ export async function importStageHtml(stageNr, html) {
     if (!payload) {
       await note(stage.nr, null);
       return `etappe ${stage.nr}: uitslag nog niet compleet op PCS`;
+    }
+    if (stage.status === 'finished' && !(await differsFromStored(stage, payload))) {
+      await note(stage.nr, null);
+      return `etappe ${stage.nr}: ongewijzigd`;
+    }
+    await saveStageResult(stage.nr, payload, 'auto');
+    await processStage(stage.nr); // idempotent; zet de etappe op 'finished'
+    await note(stage.nr, null);
+    return `etappe ${stage.nr}: uitslag geïmporteerd en verwerkt`;
+  } catch (e) {
+    await note(stage.nr, e.message);
+    return `etappe ${stage.nr}: FOUT — ${e.message}`;
+  }
+}
+
+// Vertaalt letour.fr-fragmenten (per klassement één HTML-fragment) naar een
+// payload voor saveStageResult. Renners worden op rugnummer gematcht.
+// Geeft null terug zolang de uitslag nog niet compleet op letour.fr staat.
+function payloadFromLetour(stage, fragments, riders, teams) {
+  const payload = { positions: [], tttPositions: [], classifications: {} };
+  const byBib = new Map(riders.filter((r) => r.bib != null).map((r) => [r.bib, r]));
+  const riderId = (row, context) => {
+    const rider = byBib.get(row.bib);
+    if (!rider) throw new Error(`Onbekend rugnummer van letour.fr (${context}): #${row.bib}`);
+    return rider.id;
+  };
+
+  if (stage.type === 'TTT') {
+    const rows = parseTeamRanking(fragments.ete).slice(0, TOP_TTT);
+    if (rows.length < TOP_TTT) return null; // uitslag nog niet (volledig) beschikbaar
+    const names = rows.map((r) => TEAM_ALIASES[r.teamName.toLowerCase()] || r.teamName);
+    const { matched, unmatched } = matchTeamsByName(names, teams);
+    if (unmatched.length) throw new Error(`Onbekende ploegnamen van letour.fr: ${unmatched.join(', ')}`);
+    payload.tttPositions = rows.map((r, i) => ({ position: r.position, teamId: matched.get(names[i]).id }));
+  } else {
+    const rows = parseRiderRanking(fragments.ite).slice(0, TOP_STAGE);
+    if (rows.length < TOP_STAGE) return null;
+    payload.positions = rows.map((r) => ({ position: r.position, riderId: riderId(r, 'daguitslag') }));
+  }
+
+  // Algemeen klassement moet er zijn; punt/berg/jong kunnen vroeg in de Tour nog (bijna) leeg zijn.
+  const CLS_FRAGMENTS = { alg: 'itg', punt: 'ipg', berg: 'img', jong: 'ijg' };
+  const classLists = {};
+  for (const [cls, key] of Object.entries(CLS_FRAGMENTS)) {
+    classLists[cls] = parseRiderRanking(fragments[key]).slice(0, TOP_CLASS);
+  }
+  if (classLists.alg.length < TOP_CLASS) return null;
+  for (const cls of Object.keys(CLS_FRAGMENTS)) {
+    payload.classifications[cls] = classLists[cls].map((r) => riderId(r, cls));
+  }
+
+  return payload;
+}
+
+// Verwerkt de (door de Action aangeleverde) klassementsfragmenten van letour.fr.
+export async function importLetourRankings(stageNr, fragments) {
+  const stage = await get('SELECT * FROM stages WHERE nr = ?', [stageNr]);
+  if (!stage) throw new Error(`Etappe ${stageNr} bestaat niet`);
+  if (stage.result_source === 'manual') return `etappe ${stageNr}: handmatig — overgeslagen`;
+
+  const riders = await all('SELECT id, name, bib FROM riders');
+  const teams = await all('SELECT id, name FROM cycling_teams');
+
+  try {
+    const payload = payloadFromLetour(stage, fragments || {}, riders, teams);
+    if (!payload) {
+      await note(stage.nr, null);
+      return `etappe ${stage.nr}: uitslag nog niet compleet op letour.fr`;
     }
     if (stage.status === 'finished' && !(await differsFromStored(stage, payload))) {
       await note(stage.nr, null);
