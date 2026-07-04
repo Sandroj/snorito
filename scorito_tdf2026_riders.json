@@ -24,34 +24,6 @@
     ]
   },
   {
-    "eventRiderId": 213259,
-    "riderId": 6513,
-    "firstName": "Kaden",
-    "lastName": "Groves",
-    "nameShort": "K. Groves",
-    "age": 27,
-    "nationality": "AUS",
-    "team": "Alpecin-Premier Tech",
-    "teamAbbreviation": "APT",
-    "price": 2000000,
-    "type": "Sprinter",
-    "status": 2,
-    "qualities": [
-      {
-        "type": "Sprinten",
-        "value": 7
-      },
-      {
-        "type": "Punchen",
-        "value": 2
-      },
-      {
-        "type": "Tijdrijden",
-        "value": 2
-      }
-    ]
-  },
-  {
     "eventRiderId": 213260,
     "riderId": 6357,
     "firstName": "Mathieu",
@@ -218,42 +190,6 @@
     ]
   },
   {
-    "eventRiderId": 213266,
-    "riderId": 625,
-    "firstName": "Pello",
-    "lastName": "Bilbao",
-    "nameShort": "P. Bilbao",
-    "age": 36,
-    "nationality": "ESP",
-    "team": "Bahrain Victorious",
-    "teamAbbreviation": "TBV",
-    "price": 500000,
-    "type": 6,
-    "status": 2,
-    "qualities": [
-      {
-        "type": "Klassement",
-        "value": 3
-      },
-      {
-        "type": "Klimmer",
-        "value": 3
-      },
-      {
-        "type": "Heuvels",
-        "value": 4
-      },
-      {
-        "type": "Punchen",
-        "value": 3
-      },
-      {
-        "type": "Tijdrijden",
-        "value": 5
-      }
-    ]
-  },
-  {
     "eventRiderId": 213267,
     "riderId": 7239,
     "firstName": "Olav",
@@ -330,38 +266,6 @@
       {
         "type": "Heuvels",
         "value": 6
-      }
-    ]
-  },
-  {
-    "eventRiderId": 213270,
-    "riderId": 6972,
-    "firstName": "Stefan",
-    "lastName": "Bissegger",
-    "nameShort": "S. Bissegger",
-    "age": 27,
-    "nationality": "CHE",
-    "team": "Decathlon CMA CGM Team",
-    "teamAbbreviation": "DCT",
-    "price": 500000,
-    "type": 6,
-    "status": 2,
-    "qualities": [
-      {
-        "type": "Heuvels",
-        "value": 6
-      },
-      {
-        "type": "Punchen",
-        "value": 4
-      },
-      {
-        "type": "Tijdrijden",
-        "value": 2
-      },
-      {
-        "type": "Kasseien",
-        "value": 2
       }
     ]
   },
@@ -502,38 +406,6 @@
     ]
   },
   {
-    "eventRiderId": 213276,
-    "riderId": 1190,
-    "firstName": "David",
-    "lastName": "Gaudu",
-    "nameShort": "D. Gaudu",
-    "age": 29,
-    "nationality": "FRA",
-    "team": "Groupama - FDJ United",
-    "teamAbbreviation": "GFC",
-    "price": 500000,
-    "type": 6,
-    "status": 2,
-    "qualities": [
-      {
-        "type": "Klassement",
-        "value": 4
-      },
-      {
-        "type": "Klimmer",
-        "value": 4
-      },
-      {
-        "type": "Punchen",
-        "value": 2
-      },
-      {
-        "type": "Tijdrijden",
-        "value": 4
-      }
-    ]
-  },
-  {
     "eventRiderId": 213277,
     "riderId": 1096,
     "firstName": "Guillaume",
@@ -598,38 +470,6 @@
       {
         "type": "Kasseien",
         "value": 6
-      }
-    ]
-  },
-  {
-    "eventRiderId": 213279,
-    "riderId": 7025,
-    "firstName": "Carlos",
-    "lastName": "Rodríguez",
-    "nameShort": "C. Rodríguez",
-    "age": 25,
-    "nationality": "ESP",
-    "team": "INEOS Grenadiers",
-    "teamAbbreviation": "IGD",
-    "price": 750000,
-    "type": 6,
-    "status": 2,
-    "qualities": [
-      {
-        "type": "Klassement",
-        "value": 4
-      },
-      {
-        "type": "Klimmer",
-        "value": 5
-      },
-      {
-        "type": "Heuvels",
-        "value": 4
-      },
-      {
-        "type": "Tijdrijden",
-        "value": 4
       }
     ]
   },
@@ -766,38 +606,6 @@
       {
         "type": "Tijdrijden",
         "value": 2
-      }
-    ]
-  },
-  {
-    "eventRiderId": 213284,
-    "riderId": 913,
-    "firstName": "Giulio",
-    "lastName": "Ciccone",
-    "nameShort": "G. Ciccone",
-    "age": 31,
-    "nationality": "ITA",
-    "team": "Lidl - Trek",
-    "teamAbbreviation": "LTK",
-    "price": 750000,
-    "type": "Knecht",
-    "status": 2,
-    "qualities": [
-      {
-        "type": "Klassement",
-        "value": 4
-      },
-      {
-        "type": "Klimmer",
-        "value": 6
-      },
-      {
-        "type": "Punchen",
-        "value": 6
-      },
-      {
-        "type": "Tijdrijden",
-        "value": 7
       }
     ]
   },
@@ -974,34 +782,6 @@
     ]
   },
   {
-    "eventRiderId": 213290,
-    "riderId": 631,
-    "firstName": "Søren",
-    "lastName": "Kragh Andersen",
-    "nameShort": "S. Kragh Andersen",
-    "age": 31,
-    "nationality": "DNK",
-    "team": "Lidl - Trek",
-    "teamAbbreviation": "LTK",
-    "price": 500000,
-    "type": 6,
-    "status": 2,
-    "qualities": [
-      {
-        "type": "Punchen",
-        "value": 2
-      },
-      {
-        "type": "Tijdrijden",
-        "value": 2
-      },
-      {
-        "type": "Kasseien",
-        "value": 2
-      }
-    ]
-  },
-  {
     "eventRiderId": 213291,
     "riderId": 7537,
     "firstName": "Arnaud",
@@ -1142,30 +922,6 @@
       {
         "type": "Tijdrijden",
         "value": 2
-      }
-    ]
-  },
-  {
-    "eventRiderId": 213296,
-    "riderId": 7750,
-    "firstName": "Iván",
-    "lastName": "Romeo",
-    "nameShort": "I. Romeo",
-    "age": 22,
-    "nationality": "ESP",
-    "team": "Movistar Team",
-    "teamAbbreviation": "MOV",
-    "price": 500000,
-    "type": 6,
-    "status": 2,
-    "qualities": [
-      {
-        "type": "Klimmer",
-        "value": 2
-      },
-      {
-        "type": "Heuvels",
-        "value": 4
       }
     ]
   },
@@ -1402,21 +1158,6 @@
     ]
   },
   {
-    "eventRiderId": 213305,
-    "riderId": 7551,
-    "firstName": "Mick",
-    "lastName": "van Dijke",
-    "nameShort": "M. van Dijke",
-    "age": 26,
-    "nationality": "NLD",
-    "team": "Red Bull - BORA - hansgrohe",
-    "teamAbbreviation": "RBH",
-    "price": 500000,
-    "type": 6,
-    "status": 2,
-    "qualities": []
-  },
-  {
     "eventRiderId": 213306,
     "riderId": 5318,
     "firstName": "Jai",
@@ -1445,102 +1186,6 @@
       {
         "type": "Tijdrijden",
         "value": 4
-      }
-    ]
-  },
-  {
-    "eventRiderId": 213307,
-    "riderId": 817,
-    "firstName": "Daniel Felipe",
-    "lastName": "Martínez",
-    "nameShort": "D. Martínez",
-    "age": 30,
-    "nationality": "COL",
-    "team": "Red Bull - BORA - hansgrohe",
-    "teamAbbreviation": "RBH",
-    "price": 750000,
-    "type": 6,
-    "status": 2,
-    "qualities": [
-      {
-        "type": "Klassement",
-        "value": 4
-      },
-      {
-        "type": "Klimmer",
-        "value": 6
-      },
-      {
-        "type": "Heuvels",
-        "value": 4
-      },
-      {
-        "type": "Punchen",
-        "value": 4
-      },
-      {
-        "type": "Tijdrijden",
-        "value": 4
-      }
-    ]
-  },
-  {
-    "eventRiderId": 213308,
-    "riderId": 7177,
-    "firstName": "Jordi",
-    "lastName": "Meeus",
-    "nameShort": "J. Meeus",
-    "age": 28,
-    "nationality": "BEL",
-    "team": "Red Bull - BORA - hansgrohe",
-    "teamAbbreviation": "RBH",
-    "price": 2000000,
-    "type": "Sprinter",
-    "status": 2,
-    "qualities": [
-      {
-        "type": "Sprinten",
-        "value": 7
-      },
-      {
-        "type": "Kasseien",
-        "value": 2
-      }
-    ]
-  },
-  {
-    "eventRiderId": 213309,
-    "riderId": 533,
-    "firstName": "Gianni",
-    "lastName": "Moscon",
-    "nameShort": "G. Moscon",
-    "age": 32,
-    "nationality": "ITA",
-    "team": "Red Bull - BORA - hansgrohe",
-    "teamAbbreviation": "RBH",
-    "price": 500000,
-    "type": 6,
-    "status": 2,
-    "qualities": [
-      {
-        "type": "Klimmer",
-        "value": 2
-      },
-      {
-        "type": "Heuvels",
-        "value": 2
-      },
-      {
-        "type": "Punchen",
-        "value": 2
-      },
-      {
-        "type": "Tijdrijden",
-        "value": 2
-      },
-      {
-        "type": "Kasseien",
-        "value": 2
       }
     ]
   },
@@ -1590,34 +1235,6 @@
     "type": 6,
     "status": 1,
     "qualities": []
-  },
-  {
-    "eventRiderId": 213312,
-    "riderId": 803,
-    "firstName": "Mikel",
-    "lastName": "Landa",
-    "nameShort": "M. Landa",
-    "age": 36,
-    "nationality": "ESP",
-    "team": "Soudal Quick-Step",
-    "teamAbbreviation": "SOQ",
-    "price": 500000,
-    "type": 6,
-    "status": 2,
-    "qualities": [
-      {
-        "type": "Klassement",
-        "value": 4
-      },
-      {
-        "type": "Klimmer",
-        "value": 5
-      },
-      {
-        "type": "Punchen",
-        "value": 2
-      }
-    ]
   },
   {
     "eventRiderId": 213313,
@@ -1919,46 +1536,6 @@
     ]
   },
   {
-    "eventRiderId": 213324,
-    "riderId": 1225,
-    "firstName": "Wout",
-    "lastName": "van Aert",
-    "nameShort": "W. van Aert",
-    "age": 31,
-    "nationality": "BEL",
-    "team": "Team Visma | Lease a Bike",
-    "teamAbbreviation": "TVL",
-    "price": 1500000,
-    "type": "Knecht",
-    "status": 2,
-    "qualities": [
-      {
-        "type": "Klimmer",
-        "value": 4
-      },
-      {
-        "type": "Heuvels",
-        "value": 8
-      },
-      {
-        "type": "Sprinten",
-        "value": 7
-      },
-      {
-        "type": "Punchen",
-        "value": 8
-      },
-      {
-        "type": "Tijdrijden",
-        "value": 8
-      },
-      {
-        "type": "Kasseien",
-        "value": 10
-      }
-    ]
-  },
-  {
     "eventRiderId": 213325,
     "riderId": 7003,
     "firstName": "Matteo",
@@ -2062,30 +1639,6 @@
       },
       {
         "type": "Tijdrijden",
-        "value": 4
-      }
-    ]
-  },
-  {
-    "eventRiderId": 213329,
-    "riderId": 7023,
-    "firstName": "Ben",
-    "lastName": "Tulett",
-    "nameShort": "B. Tulett",
-    "age": 24,
-    "nationality": "GBR",
-    "team": "Team Visma | Lease a Bike",
-    "teamAbbreviation": "TVL",
-    "price": 750000,
-    "type": 6,
-    "status": 2,
-    "qualities": [
-      {
-        "type": "Klimmer",
-        "value": 2
-      },
-      {
-        "type": "Heuvels",
         "value": 4
       }
     ]
@@ -2223,38 +1776,6 @@
     ]
   },
   {
-    "eventRiderId": 213334,
-    "riderId": 1097,
-    "firstName": "Marc",
-    "lastName": "Soler",
-    "nameShort": "M. Soler",
-    "age": 32,
-    "nationality": "ESP",
-    "team": "UAE Team Emirates - XRG",
-    "teamAbbreviation": "UAD",
-    "price": 2000000,
-    "type": 6,
-    "status": 2,
-    "qualities": [
-      {
-        "type": "Klassement",
-        "value": 2
-      },
-      {
-        "type": "Klimmer",
-        "value": 4
-      },
-      {
-        "type": "Heuvels",
-        "value": 2
-      },
-      {
-        "type": "Tijdrijden",
-        "value": 6
-      }
-    ]
-  },
-  {
     "eventRiderId": 213335,
     "riderId": 5426,
     "firstName": "Brandon",
@@ -2343,30 +1864,6 @@
       {
         "type": "Kasseien",
         "value": 6
-      }
-    ]
-  },
-  {
-    "eventRiderId": 213338,
-    "riderId": 6426,
-    "firstName": "Andreas",
-    "lastName": "Kron",
-    "nameShort": "A. Kron",
-    "age": 28,
-    "nationality": "DNK",
-    "team": "Uno-X Mobility",
-    "teamAbbreviation": "UXM",
-    "price": 500000,
-    "type": 6,
-    "status": 2,
-    "qualities": [
-      {
-        "type": "Punchen",
-        "value": 4
-      },
-      {
-        "type": "Tijdrijden",
-        "value": 4
       }
     ]
   },
@@ -2527,34 +2024,6 @@
     ]
   },
   {
-    "eventRiderId": 213344,
-    "riderId": 6378,
-    "firstName": "Lorenzo",
-    "lastName": "Fortunato",
-    "nameShort": "L. Fortunato",
-    "age": 30,
-    "nationality": "ITA",
-    "team": "XDS Astana Team",
-    "teamAbbreviation": "XAT",
-    "price": 750000,
-    "type": "Knecht",
-    "status": 2,
-    "qualities": [
-      {
-        "type": "Klassement",
-        "value": 2
-      },
-      {
-        "type": "Klimmer",
-        "value": 2
-      },
-      {
-        "type": "Tijdrijden",
-        "value": 2
-      }
-    ]
-  },
-  {
     "eventRiderId": 213345,
     "riderId": 893,
     "firstName": "Alex",
@@ -2595,54 +2064,6 @@
       {
         "type": "Sprinten",
         "value": 6
-      }
-    ]
-  },
-  {
-    "eventRiderId": 213347,
-    "riderId": 7017,
-    "firstName": "Simon",
-    "lastName": "Carr",
-    "nameShort": "S. Carr",
-    "age": 27,
-    "nationality": "GBR",
-    "team": "Cofidis",
-    "teamAbbreviation": "COF",
-    "price": 500000,
-    "type": 6,
-    "status": 2,
-    "qualities": [
-      {
-        "type": "Klimmer",
-        "value": 2
-      },
-      {
-        "type": "Tijdrijden",
-        "value": 2
-      }
-    ]
-  },
-  {
-    "eventRiderId": 213348,
-    "riderId": 79,
-    "firstName": "Emanuel",
-    "lastName": "Buchmann",
-    "nameShort": "E. Buchmann",
-    "age": 33,
-    "nationality": "DEU",
-    "team": "Cofidis",
-    "teamAbbreviation": "COF",
-    "price": 500000,
-    "type": 6,
-    "status": 2,
-    "qualities": [
-      {
-        "type": "Klimmer",
-        "value": 2
-      },
-      {
-        "type": "Tijdrijden",
-        "value": 2
       }
     ]
   },
@@ -2759,34 +2180,6 @@
       {
         "type": "Kasseien",
         "value": 4
-      }
-    ]
-  },
-  {
-    "eventRiderId": 213353,
-    "riderId": 528,
-    "firstName": "Stefan",
-    "lastName": "Küng",
-    "nameShort": "S. Küng",
-    "age": 32,
-    "nationality": "CHE",
-    "team": "Tudor Pro Cycling Team",
-    "teamAbbreviation": "TUD",
-    "price": 500000,
-    "type": 6,
-    "status": 2,
-    "qualities": [
-      {
-        "type": "Heuvels",
-        "value": 8
-      },
-      {
-        "type": "Tijdrijden",
-        "value": 2
-      },
-      {
-        "type": "Kasseien",
-        "value": 8
       }
     ]
   },
@@ -2994,34 +2387,6 @@
       {
         "type": "Kasseien",
         "value": 2
-      }
-    ]
-  },
-  {
-    "eventRiderId": 213361,
-    "riderId": 7624,
-    "firstName": "Roger",
-    "lastName": "Adrià",
-    "nameShort": "R. Adrià",
-    "age": 28,
-    "nationality": "ESP",
-    "team": "Movistar Team",
-    "teamAbbreviation": "MOV",
-    "price": 500000,
-    "type": 6,
-    "status": 2,
-    "qualities": [
-      {
-        "type": "Klimmer",
-        "value": 2
-      },
-      {
-        "type": "Punchen",
-        "value": 4
-      },
-      {
-        "type": "Tijdrijden",
-        "value": 4
       }
     ]
   },
