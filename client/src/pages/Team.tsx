@@ -17,6 +17,7 @@ export default function Team() {
   const [budget, setBudget] = useState(45_000_000);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [locked, setLocked] = useState(false);
+  const [tourStarted, setTourStarted] = useState(false);
   const [search, setSearch] = useState('');
   const [view, setView] = useState<'renners' | 'teams'>('renners');
   const [cat, setCat] = useState<Cat>('all');
@@ -31,6 +32,7 @@ export default function Team() {
       setBudget(r.budget);
       setSelected(new Set(t.riderIds));
       setLocked(t.locked);
+      setTourStarted(!!t.tourStarted);
       setTeams(tm.teams);
     });
   }, []);
@@ -178,7 +180,13 @@ export default function Team() {
       <p className="page-sub">
         Kies {TEAM_SIZE} renners binnen je budget, max {MAX_PER_TEAM} per ploeg. <Link to="/regels">Spelregels →</Link>
       </p>
-      {locked && <div className="error">De teamselectie is vergrendeld — etappe 1 is gestart.</div>}
+      {locked && <div className="error">Je team is definitief — de Tour is begonnen.</div>}
+      {tourStarted && !locked && (
+        <div className="success">
+          De Tour is al begonnen, maar je kunt nog meedoen: maak je team van 20 renners compleet.
+          Je scoort punten vanaf de eerstvolgende etappe die nog open staat; eerdere etappes tellen voor jou niet mee.
+        </div>
+      )}
 
       <div className="summary glass">
         <div className="stats">

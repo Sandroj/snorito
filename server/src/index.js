@@ -395,18 +395,27 @@ app.get('/api/rules', (_req, res) => {
 
 // --- teamselectie -----------------------------------------------------------
 
-const teamLocked = async () =>
+// Na de Tourstart zijn complete teams definitief, maar late aanmelders mogen
+// hun (nog incomplete) team altijd afmaken — zij scoren simpelweg pas vanaf de
+// eerstvolgende etappe die nog open staat.
+const tourStarted = async () =>
   (await get('SELECT status FROM stages WHERE nr = 1'))?.status !== 'open';
 
 app.get('/api/team', ah(async (req, res) => {
   const user = await requireUser(req, res); if (!user) return;
   const riderIds = (await all('SELECT rider_id FROM user_teams WHERE user_id = ?', [user.id])).map((r) => r.rider_id);
-  res.json({ riderIds, locked: await teamLocked() });
+  const started = await tourStarted();
+  res.json({ riderIds, locked: started && riderIds.length === TEAM_SIZE, tourStarted: started });
 }));
 
 app.put('/api/team', ah(async (req, res) => {
   const user = await requireUser(req, res); if (!user) return;
-  if (await teamLocked()) return res.status(409).json({ error: 'De teamselectie is gesloten (etappe 1 is gestart)' });
+  if (await tourStarted()) {
+    const count = (await get('SELECT COUNT(*) AS c FROM user_teams WHERE user_id = ?', [user.id])).c;
+    if (count === TEAM_SIZE) {
+      return res.status(409).json({ error: 'Je team is definitief — de Tour is begonnen' });
+    }
+  }
 
   const riderIds = [...new Set(req.body?.riderIds || [])];
   if (riderIds.length > TEAM_SIZE) return res.status(400).json({ error: `Maximaal ${TEAM_SIZE} renners` });
