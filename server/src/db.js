@@ -14,8 +14,10 @@ CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
   email TEXT NOT NULL UNIQUE,
-  pass_hash TEXT NOT NULL,
-  salt TEXT NOT NULL,
+  pass_hash TEXT,
+  salt TEXT,
+  google_id TEXT UNIQUE,
+  avatar_url TEXT,
   is_admin INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -145,6 +147,10 @@ function ensureColumn(table, column, definition) {
 ensureColumn('cycling_teams', 'shirt_url', 'TEXT');
 ensureColumn('stages', 'image_url', 'TEXT');
 ensureColumn('stages', 'description', 'TEXT');
+// Let op: SQLite kan geen UNIQUE-kolom toevoegen via ALTER TABLE — uniciteit via een aparte index.
+ensureColumn('users', 'google_id', 'TEXT');
+ensureColumn('users', 'avatar_url', 'TEXT');
+db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id)');
 
 export const BUDGET = 45_000_000;
 export const TEAM_SIZE = 20;

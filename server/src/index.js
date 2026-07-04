@@ -18,6 +18,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 ensureSeeded();
 
 const app = express();
+app.set('trust proxy', 1);
 app.use(express.json({ limit: '1mb' }));
 
 // --- auth helpers -----------------------------------------------------------
@@ -58,12 +59,193 @@ function requireAdmin(req, res) {
 function startSession(res, userId) {
   const token = crypto.randomBytes(24).toString('hex');
   db.prepare('INSERT INTO sessions (token, user_id) VALUES (?, ?)').run(token, userId);
-  res.setHeader('Set-Cookie', `session=${token}; HttpOnly; Path=/; Max-Age=2592000; SameSite=Lax`);
+  const header = cookie('session', token, {
+    httpOnly: true,
+    path: '/',
+    maxAge: 60 * 60 * 24 * 30,
+    sameSite: 'Lax',
+    secure: isProduction(),
+  });
+  res.setHeader('Set-Cookie', header);
+  return header;
 }
 
-const publicUser = (u) => ({ id: u.id, name: u.name, email: u.email, isAdmin: !!u.is_admin });
+const publicUser = (u) => ({
+  id: u.id,
+  name: u.name,
+  email: u.email,
+  avatarUrl: u.avatar_url || null,
+  isAdmin: !!u.is_admin,
+});
+
+function isProduction() {
+  return process.env.NODE_ENV === 'production';
+}
+
+function cookie(name, value, options = {}) {
+  const parts = [`${name}=${encodeURIComponent(value)}`];
+
+  if (options.httpOnly !== false) parts.push('HttpOnly');
+  if (options.path) parts.push(`Path=${options.path}`);
+  if (options.maxAge != null) parts.push(`Max-Age=${options.maxAge}`);
+  if (options.sameSite) parts.push(`SameSite=${options.sameSite}`);
+  if (options.secure) parts.push('Secure');
+
+  return parts.join('; ');
+}
+
+function appUrl(req) {
+  return (
+    process.env.APP_URL ||
+    process.env.RENDER_EXTERNAL_URL ||
+    `${req.protocol}://${req.get('host')}` ||
+    'http://localhost:3001'
+  ).replace(/\/$/, '');
+}
+
+function googleRedirectUri(req) {
+  return `${appUrl(req)}/api/auth/google/callback`;
+}
+
+function googleAuthConfigured() {
+  return !!process.env.GOOGLE_CLIENT_ID && !!process.env.GOOGLE_CLIENT_SECRET;
+}
 
 // --- auth routes ------------------------------------------------------------
+
+app.get('/api/auth/google', (req, res) => {
+  if (!googleAuthConfigured()) {
+    return res.status(500).send('Google login is niet geconfigureerd');
+  }
+
+  const state = crypto.randomBytes(24).toString('hex');
+
+  const params = new URLSearchParams({
+    client_id: process.env.GOOGLE_CLIENT_ID,
+    redirect_uri: googleRedirectUri(req),
+    response_type: 'code',
+    scope: 'openid email profile',
+    state,
+    prompt: 'select_account',
+  });
+
+  res.setHeader(
+    'Set-Cookie',
+    cookie('google_oauth_state', state, {
+      httpOnly: true,
+      path: '/',
+      maxAge: 60 * 10,
+      sameSite: 'Lax',
+      secure: isProduction(),
+    })
+  );
+
+  res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
+});
+
+app.get('/api/auth/google/callback', async (req, res) => {
+  try {
+    if (!googleAuthConfigured()) {
+      return res.status(500).send('Google login is niet geconfigureerd');
+    }
+
+    const { code, state, error } = req.query;
+
+    if (error) {
+      return res.redirect('/login?error=google');
+    }
+
+    const cookies = parseCookies(req);
+
+    if (!state || !cookies.google_oauth_state || state !== cookies.google_oauth_state) {
+      return res.status(400).send('Ongeldige Google login state');
+    }
+
+    if (!code) {
+      return res.status(400).send('Google code ontbreekt');
+    }
+
+    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code: String(code),
+        client_id: process.env.GOOGLE_CLIENT_ID,
+        client_secret: process.env.GOOGLE_CLIENT_SECRET,
+        redirect_uri: googleRedirectUri(req),
+        grant_type: 'authorization_code',
+      }),
+    });
+
+    const tokenData = await tokenResponse.json();
+
+    if (!tokenResponse.ok) {
+      console.error('Google token error:', tokenData);
+      return res.redirect('/login?error=google');
+    }
+
+    const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: {
+        Authorization: `Bearer ${tokenData.access_token}`,
+      },
+    });
+
+    const googleUser = await userInfoResponse.json();
+
+    if (!userInfoResponse.ok) {
+      console.error('Google userinfo error:', googleUser);
+      return res.redirect('/login?error=google');
+    }
+
+    const googleId = googleUser.sub;
+    const email = googleUser.email;
+    const name = googleUser.name || email;
+    const avatarUrl = googleUser.picture || null;
+
+    if (!googleId || !email) {
+      return res.redirect('/login?error=google');
+    }
+
+    let user =
+      db.prepare('SELECT * FROM users WHERE google_id = ?').get(googleId) ||
+      db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+
+    if (user) {
+      db.prepare(`
+        UPDATE users
+        SET google_id = ?, name = ?, avatar_url = ?
+        WHERE id = ?
+      `).run(googleId, name, avatarUrl, user.id);
+
+      user = db.prepare('SELECT * FROM users WHERE id = ?').get(user.id);
+    } else {
+      const info = db.prepare(`
+        INSERT INTO users (name, email, pass_hash, salt, google_id, avatar_url)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(name, email, '', '', googleId, avatarUrl);
+
+      user = db.prepare('SELECT * FROM users WHERE id = ?').get(info.lastInsertRowid);
+    }
+
+    const sessionCookie = startSession(res, user.id);
+
+    res.setHeader('Set-Cookie', [
+      sessionCookie,
+      cookie('google_oauth_state', '', {
+        httpOnly: true,
+        path: '/',
+        maxAge: 0,
+        sameSite: 'Lax',
+        secure: isProduction(),
+      }),
+    ]);
+
+    res.redirect('/');
+  } catch (e) {
+    console.error('Google login callback error:', e);
+    res.redirect('/login?error=google');
+  }
+});
 
 app.post('/api/auth/register', (req, res) => {
   const { name, email, password } = req.body || {};

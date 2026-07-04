@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type MouseEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { api, euro, euroShort, flag, Rider, CyclingTeam, QUALITIES, typeChipClass } from '../api';
 import { PlusIcon, MinusIcon } from '../components/Icons';
@@ -21,6 +21,7 @@ export default function Team() {
   const [view, setView] = useState<'renners' | 'teams'>('renners');
   const [cat, setCat] = useState<Cat>('all');
   const [teamId, setTeamId] = useState<number | null>(null);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
   const [msg, setMsg] = useState<{ kind: 'error' | 'success'; text: string } | null>(null);
   const { refresh } = useSession();
 
@@ -90,41 +91,83 @@ export default function Team() {
     );
   }, [riders, teamId, cat, selected, search]);
 
-  const topQualities = (r: Rider, highlight?: string) => {
+  const sortedQualities = (r: Rider, highlight?: string) => {
     const entries = Object.entries(r.qualities).filter(([, v]) => v > 0);
     entries.sort((a, b) => (b[0] === highlight ? 1 : 0) - (a[0] === highlight ? 1 : 0) || b[1] - a[1]);
-    return entries.slice(0, 2);
+    return entries;
   };
 
   const RiderRow = ({ r }: { r: Rider }) => {
     const isSel = selected.has(r.id);
     const disabled = !isSel && !canAdd(r);
     const highlight = cat !== 'all' && cat !== 'mine' ? (cat as string) : undefined;
+    const isOpen = expandedId === r.id;
+    const quals = sortedQualities(r, highlight);
+    const toggleSel = (e: MouseEvent) => {
+      e.stopPropagation();
+      if (isSel || !disabled) toggle(r);
+    };
     return (
-      <div
-        className={`rider-row ${isSel ? 'selected' : ''} ${disabled && !locked ? 'disabled' : ''}`}
-        onClick={() => (isSel || !disabled) && toggle(r)}
-      >
-        <Shirt url={r.team_shirt} size={30} />
-        <div className="info">
-          <div className="name-line">
-            <span className="flag">{flag(r.nationality)}</span>
-            <span className="name">{r.name}</span>
-            <span className={typeChipClass(r.type)}>{r.type}</span>
+      <div className={`rider-item ${isSel ? 'selected' : ''}`}>
+        <div
+          className={`rider-row ${disabled && !locked && !isOpen ? 'disabled' : ''}`}
+          onClick={() => setExpandedId(isOpen ? null : r.id)}
+        >
+          <Shirt url={r.team_shirt} size={30} />
+          <div className="info">
+            <div className="name-line">
+              <span className="flag">{flag(r.nationality)}</span>
+              <span className="name">{r.name}</span>
+              <span className={typeChipClass(r.type)}>{r.type}</span>
+            </div>
+            <div className="quals">
+              {quals.slice(0, 2).map(([k, v]) => <QualityTag key={k} name={k} value={v} />)}
+              {quals.length > 2 && <span className="more">+{quals.length - 2} meer</span>}
+              {quals.length === 0 && <span className="muted" style={{ fontSize: 12 }}>Geen kwaliteitsdata</span>}
+            </div>
           </div>
-          <div className="quals">
-            {topQualities(r, highlight).map(([k, v]) => <QualityTag key={k} name={k} value={v} />)}
-            {topQualities(r).length === 0 && <span className="muted" style={{ fontSize: 12 }}>{r.team_name}</span>}
+          <div className="rider-right">
+            <span className="price">{euroShort(r.price)}</span>
+            {!locked && (
+              <button
+                className={`addbtn ${isSel ? 'added' : ''}`}
+                onClick={toggleSel}
+                disabled={disabled}
+                aria-label={isSel ? 'Verwijderen' : 'Toevoegen'}
+              >
+                {isSel ? <MinusIcon size={16} /> : <PlusIcon size={16} />}
+              </button>
+            )}
           </div>
         </div>
-        <div className="rider-right">
-          <span className="price">{euroShort(r.price)}</span>
-          {!locked && (
-            <button className={`addbtn ${isSel ? 'added' : ''}`} aria-label={isSel ? 'Verwijderen' : 'Toevoegen'}>
-              {isSel ? <MinusIcon size={16} /> : <PlusIcon size={16} />}
-            </button>
-          )}
-        </div>
+
+        {isOpen && (
+          <div className="rider-detail">
+            <div className="detail-meta">
+              <span>{flag(r.nationality)} {r.nationality}</span>
+              <span>{r.age} jaar</span>
+              <span>{r.team_name}</span>
+              <span className="price">{euro(r.price)}</span>
+            </div>
+            {quals.length > 0 ? (
+              <div className="detail-quals">
+                {quals.map(([k, v]) => (
+                  <div className="detail-qual" key={k}>
+                    <span className="detail-qual-name">{k}</span>
+                    <span className="detail-qual-dots"><QualityDots value={v} /><b>{v}</b></span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="muted" style={{ fontSize: 13 }}>Deze renner heeft (nog) geen kwaliteitsscores in de data.</div>
+            )}
+            {!locked && (
+              <button className="btn btn-primary btn-block" style={{ marginTop: 12 }} onClick={toggleSel} disabled={disabled}>
+                {isSel ? 'Uit team verwijderen' : disabled ? 'Niet mogelijk (budget of max. 4 per ploeg)' : 'Aan team toevoegen'}
+              </button>
+            )}
+          </div>
+        )}
       </div>
     );
   };
