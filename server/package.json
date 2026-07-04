@@ -4,12 +4,14 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node src/index.js",
-    "seed": "node src/seed.js",
-    "demo": "node src/demo.js"
+    "dev": "node --env-file-if-exists=.env src/index.js",
+    "seed": "node --env-file-if-exists=.env src/seed.js",
+    "demo": "node --env-file-if-exists=.env src/demo.js",
+    "test": "node --test test/"
   },
   "dependencies": {
-    "better-sqlite3": "^11.3.0",
-    "express": "^4.19.2"
+    "cheerio": "^1.2.0",
+    "express": "^4.19.2",
+    "pg": "^8.22.0"
   }
 }
