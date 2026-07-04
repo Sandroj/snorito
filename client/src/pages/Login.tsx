@@ -115,10 +115,6 @@ export default function Login() {
           )}
         </p>
       </div>
-      <p className="auth-demo">
-        Demo-accounts<br />
-        max@demo.nl / demo123 · admin@snorito.app / admin123
-      </p>
     </div>
   );
 }
