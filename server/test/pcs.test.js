@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parseStagePage, parseTttResults, normalizeName, matchByName } from '../src/pcs.js';
+import { parseStagePage, parseTttResults, normalizeName, matchByName, matchTeamsByName } from '../src/pcs.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const stageHtml = fs.readFileSync(path.join(here, 'fixtures', 'stage.html'), 'utf8');
@@ -62,6 +62,20 @@ test('matchByName: bekende namen matchen, onbekende komen terug als unmatched', 
   assert.equal(matched.get('Philipsen Jasper').id, 1);
   assert.equal(matched.get('POGAČAR Tadej').id, 2);
   assert.deepEqual(unmatched, ['Fietsen Piet']);
+});
+
+test('matchTeamsByName: token-subset vangt naamvarianten, ambiguïteit wordt geweigerd', () => {
+  const teamsJson = JSON.parse(fs.readFileSync(path.join(here, '..', '..', 'data', 'teams_tdf2026.json'), 'utf8'));
+  const teams = teamsJson.map((t, i) => ({ id: i + 1, name: t.name }));
+  const { matched, unmatched } = matchTeamsByName(
+    ['Visma | Lease a Bike', 'Red Bull - BORA - hansgrohe', 'Alpecin - Premier Tech', 'UAE Team Emirates - XRG', 'Onbestaand Wielerteam'],
+    teams
+  );
+  assert.equal(matched.get('Visma | Lease a Bike').name, 'Team Visma | Lease a Bike');
+  assert.equal(matched.get('Red Bull - BORA - hansgrohe').name, 'Red Bull - BORA - hansgrohe');
+  assert.equal(matched.get('Alpecin - Premier Tech').name, 'Alpecin-Premier Tech');
+  assert.equal(matched.get('UAE Team Emirates - XRG').name, 'UAE Team Emirates - XRG');
+  assert.deepEqual(unmatched, ['Onbestaand Wielerteam']);
 });
 
 test('matching tegen de echte rennerslijst (2026): toppers worden gevonden', () => {

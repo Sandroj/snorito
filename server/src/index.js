@@ -13,6 +13,8 @@ import {
 } from './points.js';
 import { ensureSeeded } from './seed.js';
 import { runSync, saveStageResult } from './sync.js';
+import { sendPasswordResetMail } from './mail.js';
+import { rateLimit } from './ratelimit.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -232,6 +234,7 @@ app.get('/api/auth/google/callback', ah(async (req, res) => {
       user = await get('SELECT * FROM users WHERE id = ?', [row.id]);
     }
 
+    await run('UPDATE users SET last_login_at = now() WHERE id = ?', [user.id]);
     const sessionCookie = await startSession(res, user.id);
 
     res.setHeader('Set-Cookie', [
@@ -268,13 +271,65 @@ app.post('/api/auth/register', ah(async (req, res) => {
 }));
 
 app.post('/api/auth/login', ah(async (req, res) => {
+  if (!rateLimit(`login:${req.ip}`, 20, 15 * 60_000)) {
+    return res.status(429).json({ error: 'Te veel inlogpogingen — probeer het later opnieuw' });
+  }
   const { email, password } = req.body || {};
   const user = await get('SELECT * FROM users WHERE email = ?', [email || '']);
   if (!user || hashPassword(password || '', user.salt) !== user.pass_hash) {
     return res.status(401).json({ error: 'Onjuiste inloggegevens' });
   }
+  await run('UPDATE users SET last_login_at = now() WHERE id = ?', [user.id]);
   await startSession(res, user.id);
   res.json({ user: publicUser(user) });
+}));
+
+const sha256 = (s) => crypto.createHash('sha256').update(s).digest('hex');
+
+app.post('/api/auth/forgot', ah(async (req, res) => {
+  const email = (req.body?.email || '').trim().toLowerCase();
+  const generic = { ok: true }; // altijd hetzelfde antwoord — verraadt niet of het adres bestaat
+  if (!email) return res.json(generic);
+  if (!rateLimit(`forgot-ip:${req.ip}`, 10, 15 * 60_000)) return res.json(generic);
+  if (!rateLimit(`forgot:${email}`, 3, 15 * 60_000)) return res.json(generic);
+
+  const user = await get('SELECT * FROM users WHERE lower(email) = ?', [email]);
+  if (!user) return res.json(generic);
+
+  const token = crypto.randomBytes(32).toString('hex');
+  await run(
+    "INSERT INTO password_resets (user_id, token_hash, expires_at) VALUES (?, ?, now() + interval '1 hour')",
+    [user.id, sha256(token)]
+  );
+  try {
+    await sendPasswordResetMail(user.email, `${appUrl(req)}/reset?token=${token}`);
+  } catch (e) {
+    console.error('Mailfout bij wachtwoord-reset:', e.message);
+  }
+  res.json(generic);
+}));
+
+app.post('/api/auth/reset', ah(async (req, res) => {
+  if (!rateLimit(`reset:${req.ip}`, 10, 15 * 60_000)) {
+    return res.status(429).json({ error: 'Te veel pogingen — probeer het later opnieuw' });
+  }
+  const { token, password } = req.body || {};
+  if (!token || !password || password.length < 6) {
+    return res.status(400).json({ error: 'Wachtwoord moet minimaal 6 tekens zijn' });
+  }
+  const row = await get(
+    'SELECT * FROM password_resets WHERE token_hash = ? AND used_at IS NULL AND expires_at > now()',
+    [sha256(token)]
+  );
+  if (!row) return res.status(400).json({ error: 'Deze link is ongeldig of verlopen — vraag een nieuwe aan' });
+
+  const salt = crypto.randomBytes(16).toString('hex');
+  await tx(async (h) => {
+    await h.run('UPDATE users SET pass_hash = ?, salt = ? WHERE id = ?', [hashPassword(password, salt), salt, row.user_id]);
+    await h.run('UPDATE password_resets SET used_at = now() WHERE id = ?', [row.id]);
+    await h.run('DELETE FROM sessions WHERE user_id = ?', [row.user_id]); // oude sessies zijn niet meer te vertrouwen
+  });
+  res.json({ ok: true });
 }));
 
 app.post('/api/auth/logout', ah(async (req, res) => {
@@ -656,6 +711,17 @@ app.put('/api/admin/rider/:id/withdrawn', ah(async (req, res) => {
 app.get('/api/admin/teams', ah(async (req, res) => {
   const user = await requireAdmin(req, res); if (!user) return;
   res.json({ teams: await all('SELECT * FROM cycling_teams ORDER BY name') });
+}));
+
+app.get('/api/admin/users', ah(async (req, res) => {
+  const user = await requireAdmin(req, res); if (!user) return;
+  const users = await all(`
+    SELECT u.id, u.name, u.email, u.is_admin, (u.google_id IS NOT NULL) AS has_google,
+           u.created_at, u.last_login_at,
+           (SELECT COUNT(*) FROM user_teams t WHERE t.user_id = u.id) AS team_count
+    FROM users u ORDER BY u.created_at DESC
+  `);
+  res.json({ total: users.length, users });
 }));
 
 // --- cron -------------------------------------------------------------------

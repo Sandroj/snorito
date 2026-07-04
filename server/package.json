@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node --env-file-if-exists=.env src/index.js",
-    "seed": "node --env-file-if-exists=.env src/seed.js",
-    "demo": "node --env-file-if-exists=.env src/demo.js",
+    "dev": "node src/index.js",
+    "seed": "node src/seed.js",
+    "demo": "node src/demo.js",
     "test": "node --test test/"
   },
   "dependencies": {

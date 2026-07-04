@@ -1,4 +1,17 @@
 import pg from 'pg';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+// Mini-.env-lader (server/.env), zonder dependency en werkend op elke Node-versie.
+// Bestaande omgevingsvariabelen (zoals op Render) winnen altijd.
+try {
+  const envPath = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '.env');
+  for (const line of fs.readFileSync(envPath, 'utf8').split('\n')) {
+    const m = line.match(/^\s*([A-Za-z0-9_]+)\s*=\s*(.*?)\s*$/);
+    if (m && !(m[1] in process.env)) process.env[m[1]] = m[2];
+  }
+} catch { /* geen .env — prima, dan alleen echte env-vars */ }
 
 // COUNT/SUM komen uit Postgres als string (bigint/numeric) — geef ze als number terug.
 pg.types.setTypeParser(20, Number);
