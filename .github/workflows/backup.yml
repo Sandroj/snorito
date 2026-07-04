@@ -1,0 +1,30 @@
+# Maakt elke 6 uur een back-up van alle spelersdata (teams, opstellingen,
+# uitslagen, punten) via /api/cron/backup en bewaart die 30 dagen als artifact.
+# Terugvinden: GitHub → Actions → Backup → run openen → Artifacts.
+name: Backup
+
+on:
+  schedule:
+    - cron: '30 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download data-export
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          curl -fsS --max-time 120 -H "Authorization: Bearer $CRON_SECRET" \
+            "$APP_URL/api/cron/backup" -o "snorito-backup.json"
+          echo "Grootte: $(wc -c < snorito-backup.json) bytes"
+          python3 -c "import json; d=json.load(open('snorito-backup.json')); print({k: len(v) if isinstance(v, list) else v for k, v in d.items()})"
+
+      - name: Bewaar als artifact (30 dagen)
+        uses: actions/upload-artifact@v4
+        with:
+          name: snorito-backup-${{ github.run_id }}
+          path: snorito-backup.json
+          retention-days: 30
