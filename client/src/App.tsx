@@ -11,6 +11,7 @@ import Pools from './pages/Pools';
 import Points from './pages/Points';
 import Rules from './pages/Rules';
 import Admin from './pages/Admin';
+import Reset from './pages/Reset';
 
 interface Session {
   user: User | null;
@@ -49,6 +50,7 @@ export default function App() {
     return (
       <SessionContext.Provider value={{ user, teamCount, refresh }}>
         <Routes>
+          <Route path="/reset" element={<Reset />} />
           <Route path="*" element={<Login />} />
         </Routes>
       </SessionContext.Provider>
@@ -88,6 +90,7 @@ export default function App() {
           <Route path="/poules" element={<Pools />} />
           <Route path="/punten" element={<Points />} />
           <Route path="/regels" element={<Rules />} />
+          <Route path="/reset" element={<Reset />} />
           {user.isAdmin && <Route path="/admin" element={<Admin />} />}
           <Route path="*" element={<Navigate to="/team" />} />
         </Routes>

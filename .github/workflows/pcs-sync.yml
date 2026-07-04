@@ -1,0 +1,19 @@
+# Roept elke 10 minuten het sync-endpoint van Snorito aan (Render free tier
+# heeft geen betrouwbare eigen timer; dit maakt de instantie ook wakker).
+# Secrets: APP_URL (https://….onrender.com) en CRON_SECRET (ook in Render als env-var).
+name: PCS sync
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping sync-endpoint
+        run: |
+          curl -fsS --max-time 120 -X POST \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.APP_URL }}/api/cron/pcs-sync"

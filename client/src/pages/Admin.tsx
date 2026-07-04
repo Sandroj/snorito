@@ -1,8 +1,26 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api, Rider, Stage, stageLabel } from '../api';
 
-interface AdminStage extends Stage { hasResult: boolean; }
+interface AdminStage extends Stage {
+  hasResult: boolean;
+  result_source: 'auto' | 'manual' | null;
+  sync_checked_at: string | null;
+  sync_error: string | null;
+}
 interface CyclingTeam { id: number; name: string; }
+interface AdminUser {
+  id: number;
+  name: string;
+  email: string;
+  is_admin: number;
+  has_google: boolean;
+  created_at: string;
+  last_login_at: string | null;
+  team_count: number;
+}
+
+const fmtDT = (iso: string | null) =>
+  iso ? new Date(iso).toLocaleString('nl-NL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
 
 const CLS_LABELS: Record<string, string> = {
   alg: 'Algemeen klassement (top 5)',
@@ -53,6 +71,7 @@ export default function Admin() {
   const [msg, setMsg] = useState<{ kind: 'error' | 'success'; text: string } | null>(null);
   const [withdrawRider, setWithdrawRider] = useState<number | null>(null);
   const [withdrawStage, setWithdrawStage] = useState('');
+  const [users, setUsers] = useState<AdminUser[]>([]);
 
   const load = () => api('/api/admin/overview').then((r) => setStages(r.stages));
 
@@ -60,7 +79,13 @@ export default function Admin() {
     load();
     api('/api/riders').then((r) => setRiders(r.riders));
     api('/api/admin/teams').then((r) => setTeams(r.teams));
+    api('/api/admin/users').then((r) => setUsers(r.users));
   }, []);
+
+  const setSource = async (nr: number, source: 'auto' | 'manual') => {
+    await api(`/api/admin/stage/${nr}/source`, { method: 'PUT', json: { source } });
+    load();
+  };
 
   const stage = stages.find((s) => s.nr === sel) || null;
 
@@ -155,6 +180,16 @@ export default function Admin() {
         {riders.map((r) => <option key={r.id} value={r.name}>{r.team_name}</option>)}
       </datalist>
 
+      {stages.some((s) => s.sync_error) && (
+        <div className="error">
+          <b>PCS-sync-fouten:</b>
+          {stages.filter((s) => s.sync_error).map((s) => (
+            <div key={s.nr}>Etappe {s.nr}: {s.sync_error}</div>
+          ))}
+          <div style={{ marginTop: 4, fontSize: 13 }}>Voer de uitslag handmatig in of corrigeer de data; de sync probeert het elke 10 minuten opnieuw.</div>
+        </div>
+      )}
+
       <div className="card flush">
         <table>
           <thead>
@@ -162,6 +197,7 @@ export default function Admin() {
               <th style={{ paddingLeft: 16 }}>Etappe</th>
               <th>Status</th>
               <th>Uitslag</th>
+              <th>Bron</th>
               <th style={{ paddingRight: 16 }}></th>
             </tr>
           </thead>
@@ -179,6 +215,17 @@ export default function Admin() {
                   </select>
                 </td>
                 <td>{s.hasResult ? '✓' : '—'}</td>
+                <td>
+                  {s.result_source === 'manual' ? (
+                    <>
+                      <span className="chip chip-oranje" title={`Handmatig aangepast — de PCS-autosync blijft van deze etappe af.${s.sync_checked_at ? ` Laatste sync-check: ${fmtDT(s.sync_checked_at)}` : ''}`}>handmatig</span>
+                      <button className="btn btn-ghost btn-sm" title="Autosync weer aanzetten voor deze etappe" onClick={() => setSource(s.nr, 'auto')}>auto aan</button>
+                    </>
+                  ) : s.result_source === 'auto' ? (
+                    <span className="chip chip-groen" title={`Automatisch geïmporteerd van ProCyclingStats.${s.sync_checked_at ? ` Laatste sync-check: ${fmtDT(s.sync_checked_at)}` : ''}`}>auto</span>
+                  ) : '—'}
+                  {s.sync_error && <span title={`Sync-fout: ${s.sync_error}`} style={{ cursor: 'help' }}> ⚠️</span>}
+                </td>
                 <td style={{ paddingRight: 16 }}>
                   <button className="btn btn-ghost btn-sm" onClick={() => setSel(s.nr)}>Uitslag</button>
                 </td>
@@ -305,6 +352,37 @@ export default function Admin() {
             </button>
           </>
         )}
+      </div>
+
+      <div className="section-label">Gebruikers</div>
+      <div className="card flush">
+        <p style={{ padding: '12px 16px 0', margin: 0 }}><b>{users.length}</b> geregistreerde gebruikers</p>
+        <table>
+          <thead>
+            <tr>
+              <th style={{ paddingLeft: 16 }}>Naam</th>
+              <th>E-mail</th>
+              <th>Geregistreerd</th>
+              <th>Laatste login</th>
+              <th style={{ paddingRight: 16 }}>Team</th>
+            </tr>
+          </thead>
+          <tbody>
+            {users.map((u) => (
+              <tr key={u.id}>
+                <td style={{ paddingLeft: 16 }}>
+                  {u.name}
+                  {!!u.is_admin && <span className="chip chip-navy" style={{ marginLeft: 6 }}>admin</span>}
+                  {u.has_google && <span className="chip chip-grijs" style={{ marginLeft: 6 }}>Google</span>}
+                </td>
+                <td className="muted">{u.email}</td>
+                <td>{fmtDT(u.created_at)}</td>
+                <td>{fmtDT(u.last_login_at)}</td>
+                <td style={{ paddingRight: 16 }}>{u.team_count > 0 ? `${u.team_count}/20` : '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );

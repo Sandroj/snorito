@@ -4,7 +4,8 @@ import { useSession } from '../App';
 import { Moustache } from '../components/Logo';
 
 export default function Login() {
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [mode, setMode] = useState<'login' | 'register' | 'forgot'>('login');
+  const [forgotSent, setForgotSent] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -21,6 +22,11 @@ export default function Login() {
     setError('');
     setBusy(true);
     try {
+      if (mode === 'forgot') {
+        await api('/api/auth/forgot', { method: 'POST', json: { email } });
+        setForgotSent(true);
+        return;
+      }
       if (mode === 'login') {
         await api('/api/auth/login', { method: 'POST', json: { email, password } });
       } else {
@@ -42,10 +48,22 @@ export default function Login() {
         <span className="auth-tagline">Wielerpoule · Tour de France 2026</span>
       </div>
       <div className="auth-card fade-in">
-        <h2 style={{ fontSize: 19 }}>{mode === 'login' ? 'Welkom terug' : 'Doe mee met de poule'}</h2>
+        <h2 style={{ fontSize: 19 }}>
+          {mode === 'login' ? 'Welkom terug' : mode === 'register' ? 'Doe mee met de poule' : 'Wachtwoord vergeten'}
+        </h2>
         <p className="muted" style={{ marginTop: -4 }}>
-          {mode === 'login' ? 'Log in en beheer je team.' : 'Maak een account en stel je team van 20 renners samen.'}
+          {mode === 'login' ? 'Log in en beheer je team.'
+            : mode === 'register' ? 'Maak een account en stel je team van 20 renners samen.'
+            : 'Vul je e-mailadres in; je ontvangt een link om een nieuw wachtwoord in te stellen.'}
         </p>
+        {mode === 'forgot' && forgotSent ? (
+          <>
+            <p>Als dit adres bij ons bekend is, is er een e-mail verstuurd met een reset-link (1 uur geldig). Check ook je spam-map.</p>
+            <p className="auth-switch">
+              <a onClick={() => { setMode('login'); setForgotSent(false); }} style={{ cursor: 'pointer', fontWeight: 700 }}>Terug naar inloggen</a>
+            </p>
+          </>
+        ) : (
         <form onSubmit={submit}>
           {mode === 'register' && (
             <>
@@ -55,15 +73,30 @@ export default function Login() {
           )}
           <label>E-mail</label>
           <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-          <label>Wachtwoord</label>
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          {mode !== 'forgot' && (
+            <>
+              <label>Wachtwoord</label>
+              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            </>
+          )}
+          {mode === 'login' && (
+            <p style={{ margin: '6px 0 0', fontSize: 13 }}>
+              <a onClick={() => { setMode('forgot'); setError(''); }} style={{ cursor: 'pointer' }}>Wachtwoord vergeten?</a>
+            </p>
+          )}
           {error && <div className="error">{error}</div>}
           <div style={{ marginTop: 18 }}>
             <button className="btn btn-primary btn-block" disabled={busy}>
-              {mode === 'login' ? 'Inloggen' : 'Account aanmaken'}
+              {mode === 'login' ? 'Inloggen' : mode === 'register' ? 'Account aanmaken' : 'Verstuur reset-link'}
             </button>
           </div>
+          {mode === 'forgot' && (
+            <p className="auth-switch">
+              <a onClick={() => setMode('login')} style={{ cursor: 'pointer', fontWeight: 700 }}>Terug naar inloggen</a>
+            </p>
+          )}
         </form>
+        )}
         <div className="auth-divider"><span>of</span></div>
         <a className="btn btn-google btn-block" href="/api/auth/google">
           <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden>

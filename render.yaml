@@ -14,9 +14,8 @@ services:
         value: production
       - key: NPM_CONFIG_PRODUCTION
         value: "false"
+      # Data staat in Neon Postgres en overleeft deploys. In het dashboard
+      # staan als env-vars: DATABASE_URL (Neon), GOOGLE_CLIENT_ID/SECRET,
+      # BREVO_API_KEY + MAIL_FROM (wachtwoord-reset-mails) en CRON_SECRET
+      # (zelfde waarde als het GitHub-secret voor .github/workflows/pcs-sync.yml).
       # De database wordt automatisch geseed bij de eerste (lege) boot.
-      # Op het free-plan is de schijf tijdelijk: bij een nieuwe deploy wordt
-      # opnieuw geseed. Wil je dat teams/poules bewaard blijven, koppel dan een
-      # persistent disk (betaald plan) en zet DB_PATH naar het mount-pad, bijv.:
-      # - key: DB_PATH
-      #   value: /data/snorito.db
