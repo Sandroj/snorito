@@ -6,3 +6,5 @@ client/dist/
 .DS_Store
 *.log
 .env
+.playwright-mcp/
+*.tsbuildinfo

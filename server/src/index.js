@@ -12,7 +12,7 @@ import {
   STAGE_POINTS, TTT_POINTS, CLASS_POINTS_AFTER_STAGE, TEAM_POINTS_AFTER_STAGE, FINAL_TEAM_POINTS,
 } from './points.js';
 import { ensureSeeded } from './seed.js';
-import { runSync, saveStageResult } from './sync.js';
+import { runSync, syncTick, importStageHtml, noteSyncError, saveStageResult } from './sync.js';
 import { sendPasswordResetMail } from './mail.js';
 import { rateLimit } from './ratelimit.js';
 
@@ -23,7 +23,8 @@ await ensureSeeded();
 
 const app = express();
 app.set('trust proxy', 1);
-app.use(express.json({ limit: '1mb' }));
+// Ruime limiet: de PCS-sync levert complete etappepagina's (±1 MB) aan als JSON.
+app.use(express.json({ limit: '5mb' }));
 
 // Async-handlerwrapper: onverwachte fouten netjes als 500 i.p.v. hangend request.
 const ah = (fn) => (req, res) => Promise.resolve(fn(req, res)).catch((e) => {
@@ -725,13 +726,43 @@ app.get('/api/admin/users', ah(async (req, res) => {
 }));
 
 // --- cron -------------------------------------------------------------------
-// Aangeroepen door GitHub Actions (elke 10 min): zet etappes op 'gestart' en
-// importeert/verwerkt uitslagen van ProCyclingStats. Zie server/src/sync.js.
+// Aangeroepen door GitHub Actions (elke 10 min). PCS zit achter Cloudflare,
+// dus de Action haalt de pagina's op met een echte browser en levert de HTML
+// hier af. Flow: GET pcs-pending (wie heeft een uitslag nodig + auto-start)
+// → per etappe POST pcs-html met { stageNr, html } of { stageNr, error }.
 
-app.post('/api/cron/pcs-sync', ah(async (req, res) => {
+function cronAuthorized(req, res) {
   const secret = process.env.CRON_SECRET;
   const given = (req.headers.authorization || '').replace('Bearer ', '') || req.query.key;
-  if (!secret || given !== secret) return res.status(401).json({ error: 'Ongeldige sleutel' });
+  if (!secret || given !== secret) { res.status(401).json({ error: 'Ongeldige sleutel' }); return false; }
+  return true;
+}
+
+app.get('/api/cron/pcs-pending', ah(async (req, res) => {
+  if (!cronAuthorized(req, res)) return;
+  const result = await syncTick();
+  if (result.report.length) console.log('PCS-sync:', result.report.join(' | '));
+  res.json(result);
+}));
+
+app.post('/api/cron/pcs-html', ah(async (req, res) => {
+  if (!cronAuthorized(req, res)) return;
+  const { stageNr, html, error } = req.body || {};
+  if (!Number.isInteger(stageNr)) return res.status(400).json({ error: 'stageNr ontbreekt' });
+  if (error) {
+    await noteSyncError(stageNr, String(error).slice(0, 500));
+    console.log(`PCS-sync: etappe ${stageNr}: fetch-fout uit Action — ${error}`);
+    return res.json({ ok: true, noted: true });
+  }
+  if (typeof html !== 'string' || !html) return res.status(400).json({ error: 'html ontbreekt' });
+  const report = await importStageHtml(stageNr, html);
+  console.log('PCS-sync:', report);
+  res.json({ ok: true, report });
+}));
+
+// Fallback: server-side fetch (werkt alleen als PCS de server niet blokkeert).
+app.post('/api/cron/pcs-sync', ah(async (req, res) => {
+  if (!cronAuthorized(req, res)) return;
   const result = await runSync();
   console.log('PCS-sync:', result.report.length ? result.report.join(' | ') : 'geen acties');
   res.json(result);

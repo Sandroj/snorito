@@ -55,11 +55,10 @@ async function note(stageNr, error) {
   `, [stageNr, error]);
 }
 
-// Haalt en vertaalt de PCS-uitslag naar een payload voor saveStageResult.
+// Vertaalt PCS-HTML naar een payload voor saveStageResult.
 // Geeft null terug zolang de uitslag nog niet compleet op PCS staat;
 // gooit een fout bij niet te matchen namen (dan is handmatig ingrijpen nodig).
-async function importFromPcs(stage, riders, teams) {
-  const html = await fetchStagePage(stage.nr);
+function payloadFromHtml(stage, html, riders, teams) {
   const payload = { positions: [], tttPositions: [], classifications: {} };
 
   const parsed = parseStagePage(html);
@@ -114,11 +113,13 @@ async function differsFromStored(stage, payload) {
   return false;
 }
 
-export async function runSync() {
+// Zet verstreken etappes op 'gestart' en geeft terug welke etappes een
+// PCS-import willen. De GitHub Action haalt daarvoor de HTML op (met een echte
+// browser, wegens Cloudflare) en levert die af bij importStageHtml.
+export async function syncTick() {
   const report = [];
+  const pending = [];
   const stages = await all('SELECT * FROM stages ORDER BY nr');
-  const riders = await all('SELECT id, name FROM riders');
-  const teams = await all('SELECT id, name FROM cycling_teams');
   const now = Date.now();
 
   for (const s of stages) {
@@ -132,28 +133,61 @@ export async function runSync() {
       s.status === 'started' ||
       (s.status === 'finished' && s.result_source === 'auto' && now - startMs(s) < RECHECK_MS)
     );
-    if (!wantsImport) continue;
+    if (wantsImport) pending.push({ nr: s.nr, type: s.type });
+  }
 
+  return { at: new Date().toISOString(), report, stages: pending };
+}
+
+// Verwerkt de (door de Action aangeleverde) HTML van één PCS-etappepagina.
+export async function importStageHtml(stageNr, html) {
+  const stage = await get('SELECT * FROM stages WHERE nr = ?', [stageNr]);
+  if (!stage) throw new Error(`Etappe ${stageNr} bestaat niet`);
+  if (stage.result_source === 'manual') return `etappe ${stageNr}: handmatig — overgeslagen`;
+
+  const riders = await all('SELECT id, name FROM riders');
+  const teams = await all('SELECT id, name FROM cycling_teams');
+
+  try {
+    const payload = payloadFromHtml(stage, html, riders, teams);
+    if (!payload) {
+      await note(stage.nr, null);
+      return `etappe ${stage.nr}: uitslag nog niet compleet op PCS`;
+    }
+    if (stage.status === 'finished' && !(await differsFromStored(stage, payload))) {
+      await note(stage.nr, null);
+      return `etappe ${stage.nr}: ongewijzigd`;
+    }
+    await saveStageResult(stage.nr, payload, 'auto');
+    await processStage(stage.nr); // idempotent; zet de etappe op 'finished'
+    await note(stage.nr, null);
+    return `etappe ${stage.nr}: uitslag geïmporteerd en verwerkt`;
+  } catch (e) {
+    await note(stage.nr, e.message);
+    return `etappe ${stage.nr}: FOUT — ${e.message}`;
+  }
+}
+
+// Noteert een fetch-fout van de Action in het adminpaneel.
+export async function noteSyncError(stageNr, message) {
+  await note(stageNr, message);
+}
+
+// Directe server-side sync (fetch vanaf de server zelf). Werkt alleen als PCS
+// de server niet blokkeert; de Action-route hierboven is de primaire weg.
+export async function runSync() {
+  const tick = await syncTick();
+  const report = [...tick.report];
+
+  for (const p of tick.stages) {
     try {
-      const payload = await importFromPcs(s, riders, teams);
-      if (!payload) {
-        await note(s.nr, null);
-        report.push(`etappe ${s.nr}: uitslag nog niet compleet op PCS`);
-        continue;
-      }
-      if (s.status === 'finished' && !(await differsFromStored(s, payload))) {
-        await note(s.nr, null);
-        continue;
-      }
-      await saveStageResult(s.nr, payload, 'auto');
-      await processStage(s.nr); // idempotent; zet de etappe op 'finished'
-      await note(s.nr, null);
-      report.push(`etappe ${s.nr}: uitslag geïmporteerd en verwerkt`);
+      const html = await fetchStagePage(p.nr);
+      report.push(await importStageHtml(p.nr, html));
     } catch (e) {
-      await note(s.nr, e.message);
-      report.push(`etappe ${s.nr}: FOUT — ${e.message}`);
+      await note(p.nr, e.message);
+      report.push(`etappe ${p.nr}: FOUT — ${e.message}`);
     }
   }
 
-  return { at: new Date().toISOString(), report };
+  return { at: tick.at, report };
 }

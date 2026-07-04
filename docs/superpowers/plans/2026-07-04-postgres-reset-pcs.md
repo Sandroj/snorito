@@ -2,11 +2,13 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Snorito's data overleeft deploys (Neon Postgres), admin ziet gebruikers en logins, wachtwoord-reset via Resend, en etappe-uitslagen komen volautomatisch van ProCyclingStats met volledige handmatige override.
+**Goal:** Snorito's data overleeft deploys (Neon Postgres), admin ziet gebruikers en logins, wachtwoord-reset via Brevo, en etappe-uitslagen komen volautomatisch van ProCyclingStats met volledige handmatige override.
 
-**Architecture:** Opslaglaag van synchroon better-sqlite3 naar async `pg` met dunne helpers (`get`/`all`/`run`/`tx`) die de bestaande `?`-placeholders automatisch naar `$n` vertalen — de SQL blijft vrijwel ongewijzigd. Daarbovenop drie features als losse modules: `mail.js` (Resend via fetch), `pcs.js` (cheerio-parser + naammatching), `sync.js` (orkestratie, aangeroepen door een geheim cron-endpoint dat elke 10 min door GitHub Actions wordt geraakt).
+> **Wijziging 4 juli:** mailkanaal is Brevo geworden (was Resend) — reset-mails moeten naar álle gebruikers kunnen zonder eigen domein. Env-vars: `BREVO_API_KEY` + `MAIL_FROM`.
 
-**Tech Stack:** Node 22 (ESM), Express 4, `pg` (Neon), `cheerio`, Resend REST-API, React 18 + Vite (client), `node --test` voor parser-tests.
+**Architecture:** Opslaglaag van synchroon better-sqlite3 naar async `pg` met dunne helpers (`get`/`all`/`run`/`tx`) die de bestaande `?`-placeholders automatisch naar `$n` vertalen — de SQL blijft vrijwel ongewijzigd. Daarbovenop drie features als losse modules: `mail.js` (Brevo via fetch), `pcs.js` (cheerio-parser + naammatching), `sync.js` (orkestratie, aangeroepen door een geheim cron-endpoint dat elke 10 min door GitHub Actions wordt geraakt).
+
+**Tech Stack:** Node 22 (ESM), Express 4, `pg` (Neon), `cheerio`, Brevo REST-API, React 18 + Vite (client), `node --test` voor parser-tests.
 
 **Spec:** `docs/superpowers/specs/2026-07-04-postgres-reset-pcs-design.md`
 
@@ -14,7 +16,7 @@
 
 **Blokkades die Max moet oplossen (kunnen parallel):**
 - `DATABASE_URL` (Neon) uit Render → in `server/.env` zetten zodat lokaal getest kan worden.
-- Resend API-key → `RESEND_API_KEY` in Render (instructies al gegeven).
+- Brevo-account met geverifieerd afzenderadres → `BREVO_API_KEY` + `MAIL_FROM` in Render.
 - `CRON_SECRET` in Render Environment (waarde genereren we in Taak 8; GitHub-secrets zet ik zelf via `gh`).
 
 ---
@@ -237,7 +239,7 @@ app.get('/api/admin/users', ah(async (req, res) => {
 
 ---
 
-### Taak 5 (C): Wachtwoord-reset via Resend + rate-limiting
+### Taak 5 (C): Wachtwoord-reset via Brevo + rate-limiting
 
 **Files:** Create: `server/src/mail.js`, `server/src/ratelimit.js`, `client/src/pages/Reset.tsx`. Modify: `server/src/index.js`, `client/src/pages/Login.tsx`, `client/src/App.tsx`
 
@@ -255,25 +257,27 @@ export function rateLimit(key, max, windowMs) {
 }
 ```
 
-- [ ] **Stap 2: `mail.js`** — Resend REST (geen SDK). Zonder `RESEND_API_KEY` alleen loggen. NB: de reset-link wordt óók mét key gelogd — bewuste keuze zolang resend.dev alleen naar Max' eigen adres mag mailen, zodat hij links kan doorgeven.
+- [ ] **Stap 2: `mail.js`** — Brevo REST (geen SDK). Zonder `BREVO_API_KEY` alleen loggen (lokaal handig). Mails gaan naar alle gebruikers; de link wordt niet meer standaard gelogd in productie.
 
 ```js
 export async function sendPasswordResetMail(to, link) {
-  console.log(`Reset-link voor ${to}: ${link}`);
-  if (!process.env.RESEND_API_KEY) return;
-  const res = await fetch('https://api.resend.com/emails', {
+  if (!process.env.BREVO_API_KEY) {
+    console.log(`[mail uit] Reset-link voor ${to}: ${link}`);
+    return;
+  }
+  const res = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
-    headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+    headers: { 'api-key': process.env.BREVO_API_KEY, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      from: 'Snorito <onboarding@resend.dev>',
-      to: [to],
+      sender: { name: 'Snorito', email: process.env.MAIL_FROM },
+      to: [{ email: to }],
       subject: 'Wachtwoord opnieuw instellen — Snorito',
-      html: `<p>Klik op de link om een nieuw wachtwoord in te stellen (1 uur geldig):</p>
+      htmlContent: `<p>Klik op de link om een nieuw wachtwoord in te stellen (1 uur geldig):</p>
              <p><a href="${link}">${link}</a></p>
              <p>Niet zelf aangevraagd? Negeer deze mail.</p>`,
     }),
   });
-  if (!res.ok) throw new Error(`Resend ${res.status}: ${await res.text()}`);
+  if (!res.ok) throw new Error(`Brevo ${res.status}: ${await res.text()}`);
 }
 ```
 
@@ -318,7 +322,7 @@ app.post('/api/auth/reset', ah(async (req, res) => {
 ```
 
 - [ ] **Stap 4: client.** Login.tsx: link "Wachtwoord vergeten?" die het formulier omschakelt naar één e-mailveld → POST `/api/auth/forgot` → altijd melding "Als dit adres bekend is, is er een e-mail verstuurd." Nieuw `Reset.tsx` (token uit `location.search`, twee wachtwoordvelden, POST `/api/auth/reset`, bij succes link naar inloggen). Route `/reset` in App.tsx — let op: moet ook zonder ingelogde sessie bereikbaar zijn, net als `/login`.
-- [ ] **Stap 5: verifiëren** lokaal zonder key: forgot → link uit serverlog → reset → oude sessie ongeldig, nieuw wachtwoord werkt, token tweede keer gebruiken faalt, verlopen token faalt (expires_at handmatig terugzetten in DB). Commit: `git commit -m "Wachtwoord-reset via Resend + rate-limiting op auth-routes"`.
+- [ ] **Stap 5: verifiëren** lokaal zonder key: forgot → link uit serverlog → reset → oude sessie ongeldig, nieuw wachtwoord werkt, token tweede keer gebruiken faalt, verlopen token faalt (expires_at handmatig terugzetten in DB). Commit: `git commit -m "Wachtwoord-reset via Brevo + rate-limiting op auth-routes"`.
 
 ---
 
@@ -529,7 +533,7 @@ Zelfde `CRON_SECRET`-waarde moet Max in Render → Environment zetten (instructi
 
 - [ ] Volledige lokale regressie: seed → registreren → team → opstelling → cron-sync etappe 1 → punten zichtbaar → admin-correctie → herverwerken.
 - [ ] `client`: `npm run build` zonder fouten.
-- [ ] Push, Render-deploy volgen, live: reset-flow (met Resend-key), admin-gebruikersblok, sync-status, workflow-runs groen.
+- [ ] Push, Render-deploy volgen, live: reset-flow (met Brevo-key), admin-gebruikersblok, sync-status, workflow-runs groen.
 - [ ] Verifieer nogmaals dat data een deploy overleeft.
 
 ---

@@ -29,22 +29,29 @@ Opslaglaag van synchroon better-sqlite3 naar asynchroon `pg` tegen Neon Postgres
 - Adminpaneel: blok met totaal aantal gebruikers en tabel per gebruiker: naam, e-mail, registratiedatum, laatste login, team ingeleverd ja/nee.
 - Endpoint: `GET /api/admin/users` (admin-only).
 
-## C. Wachtwoord-reset (Resend)
+## C. Wachtwoord-reset (Brevo)
+
+*Gewijzigd 4 juli: Resend vervangen door Brevo. Max wil dat álle gebruikers reset-mails ontvangen zonder eigen domein; Resend mailt zonder domein alleen naar het eigen accountadres, Brevo kan met één geverifieerd afzenderadres (gratis tier, 300 mails/dag).*
 
 - Loginpagina: link "Wachtwoord vergeten?" → formulier met e-mailadres.
-- `POST /api/auth/forgot`: genereert token (32 bytes random), slaat **hash** op in nieuwe tabel `password_resets (id, user_id, token_hash, expires_at, used_at, created_at)`, mailt via Resend een link `APP_URL/reset?token=…`. Geldigheid 1 uur, eenmalig bruikbaar. Respons is altijd identiek, ook bij onbekend e-mailadres (geen enumeratie).
+- `POST /api/auth/forgot`: genereert token (32 bytes random), slaat **hash** op in nieuwe tabel `password_resets (id, user_id, token_hash, expires_at, used_at, created_at)`, mailt via Brevo een link `APP_URL/reset?token=…`. Geldigheid 1 uur, eenmalig bruikbaar. Respons is altijd identiek, ook bij onbekend e-mailadres (geen enumeratie).
 - `POST /api/auth/reset`: valideert token, stelt nieuw wachtwoord in (scrypt + nieuwe salt), markeert token gebruikt, maakt bestaande sessies van de gebruiker ongeldig. Werkt ook voor Google-accounts: daarna werken beide loginmethoden.
 - Resetpagina in de client (`/reset`).
-- Env: `RESEND_API_KEY`, `APP_URL`. Zonder API-key wordt de reset-link in de serverlog geschreven in plaats van gemaild (lokaal handig).
+- Env: `BREVO_API_KEY`, `MAIL_FROM` (het in Brevo geverifieerde afzenderadres). Zonder API-key wordt de reset-link in de serverlog geschreven in plaats van gemaild (lokaal handig).
 - Rate-limiting (eenvoudig, in-memory per IP+e-mail): op `/api/auth/login`, `/api/auth/forgot` en `/api/auth/reset`.
-- Van Max nodig: gratis Resend-account, API-key in Render. Zonder eigen domein verstuurt Resend vanaf een onboarding-adres.
+- Van Max nodig: gratis Brevo-account met geverifieerd afzenderadres, API-key + afzenderadres in Render.
 
 ## D. Volautomatische PCS-import
 
 ### Trigger
 
-- Geheim endpoint `POST /api/cron/pcs-sync` (header of query met `CRON_SECRET`).
-- GitHub Actions-workflow in de bestaande repo (schedule elke 10 min) roept het endpoint aan. Dit maakt de slapende Render-instance ook wakker. GitHub-cron kan enkele minuten vertragen; acceptabel.
+*Gewijzigd 4 juli: PCS staat achter een Cloudflare-JS-challenge; een kale server-fetch krijgt 403. Daarom haalt de GitHub Action de pagina's op met een echte headless browser (Playwright) en levert de HTML af bij de server.*
+
+- Geheime endpoints (header of query met `CRON_SECRET`):
+  - `GET /api/cron/pcs-pending` — zet verstreken etappes op 'gestart' en geeft terug welke etappes een uitslag-import willen.
+  - `POST /api/cron/pcs-html` — ontvangt `{ stageNr, html }` (of `{ stageNr, error }` bij een fetch-fout) en draait de import-pijplijn.
+  - `POST /api/cron/pcs-sync` — fallback met server-side fetch (werkt alleen als PCS de server niet blokkeert).
+- GitHub Actions-workflow (schedule elke 10 min): vraagt `pcs-pending` op (maakt de slapende Render-instance ook wakker), en alleen als er etappes wachten wordt Playwright geïnstalleerd en per etappe de PCS-pagina opgehaald en afgeleverd. GitHub-cron kan enkele minuten vertragen; acceptabel.
 
 ### Sync-logica (per aanroep)
 

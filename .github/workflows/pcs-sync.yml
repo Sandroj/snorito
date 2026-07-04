@@ -1,5 +1,7 @@
-# Roept elke 10 minuten het sync-endpoint van Snorito aan (Render free tier
-# heeft geen betrouwbare eigen timer; dit maakt de instantie ook wakker).
+# Haalt elke 10 minuten etappe-uitslagen op van ProCyclingStats en levert ze af
+# bij Snorito. PCS zit achter een Cloudflare-challenge, dus het ophalen gebeurt
+# met een echte headless browser (Playwright) in plaats van een kale fetch.
+# De aanroep van pcs-pending maakt de (slapende) Render-instantie ook wakker.
 # Secrets: APP_URL (https://….onrender.com) en CRON_SECRET (ook in Render als env-var).
 name: PCS sync
 
@@ -9,11 +11,38 @@ on:
   workflow_dispatch:
 
 jobs:
-  ping:
+  sync:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping sync-endpoint
+      - name: Vraag Snorito welke etappes een uitslag nodig hebben
+        id: pending
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
-          curl -fsS --max-time 120 -X POST \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            "${{ secrets.APP_URL }}/api/cron/pcs-sync"
+          RES=$(curl -fsS --max-time 120 -H "Authorization: Bearer $CRON_SECRET" "$APP_URL/api/cron/pcs-pending")
+          echo "$RES"
+          echo "pending=$RES" >> "$GITHUB_OUTPUT"
+          echo "count=$(echo "$RES" | jq '.stages | length')" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        if: steps.pending.outputs.count != '0'
+
+      - uses: actions/setup-node@v4
+        if: steps.pending.outputs.count != '0'
+        with:
+          node-version: 22
+
+      - name: Installeer Playwright + Chromium
+        if: steps.pending.outputs.count != '0'
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+
+      - name: Haal PCS-pagina's op en lever ze af
+        if: steps.pending.outputs.count != '0'
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          PENDING: ${{ steps.pending.outputs.pending }}
+        run: node .github/scripts/pcs-fetch.mjs
