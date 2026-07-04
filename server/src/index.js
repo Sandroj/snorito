@@ -236,6 +236,7 @@ app.get('/api/auth/google/callback', ah(async (req, res) => {
     }
 
     await run('UPDATE users SET last_login_at = now() WHERE id = ?', [user.id]);
+    await run('INSERT INTO login_events (user_id, method) VALUES (?, ?)', [user.id, 'google']);
     const sessionCookie = await startSession(res, user.id);
 
     res.setHeader('Set-Cookie', [
@@ -267,6 +268,7 @@ app.post('/api/auth/register', ah(async (req, res) => {
     'INSERT INTO users (name, email, pass_hash, salt) VALUES (?, ?, ?, ?) RETURNING id',
     [name, email, hashPassword(password, salt), salt]
   );
+  await run('INSERT INTO login_events (user_id, method) VALUES (?, ?)', [row.id, 'registratie']);
   await startSession(res, row.id);
   res.json({ user: publicUser(await get('SELECT * FROM users WHERE id = ?', [row.id])) });
 }));
@@ -281,6 +283,7 @@ app.post('/api/auth/login', ah(async (req, res) => {
     return res.status(401).json({ error: 'Onjuiste inloggegevens' });
   }
   await run('UPDATE users SET last_login_at = now() WHERE id = ?', [user.id]);
+  await run('INSERT INTO login_events (user_id, method) VALUES (?, ?)', [user.id, 'e-mail']);
   await startSession(res, user.id);
   res.json({ user: publicUser(user) });
 }));
@@ -731,7 +734,12 @@ app.get('/api/admin/users', ah(async (req, res) => {
            (SELECT COUNT(*) FROM user_teams t WHERE t.user_id = u.id) AS team_count
     FROM users u ORDER BY u.created_at DESC
   `);
-  res.json({ total: users.length, users });
+  const logins = await all(`
+    SELECT e.at, e.method, u.name, u.email
+    FROM login_events e JOIN users u ON u.id = e.user_id
+    ORDER BY e.at DESC LIMIT 100
+  `);
+  res.json({ total: users.length, users, logins });
 }));
 
 // --- cron -------------------------------------------------------------------
@@ -767,6 +775,23 @@ app.post('/api/cron/pcs-html', ah(async (req, res) => {
   const report = await importStageHtml(stageNr, html);
   console.log('PCS-sync:', report);
   res.json({ ok: true, report });
+}));
+
+// Volledige data-export voor back-ups (dagelijkse GitHub Action bewaart dit als
+// artifact). Genoeg om teams, opstellingen en punten in retrospect na te rekenen.
+// Wachtwoord-hashes blijven bewust buiten de export.
+app.get('/api/cron/backup', ah(async (req, res) => {
+  if (!cronAuthorized(req, res)) return;
+  const dump = { at: new Date().toISOString() };
+  dump.users = await all('SELECT id, name, email, is_admin, created_at, last_login_at FROM users');
+  for (const t of [
+    'cycling_teams', 'riders', 'stages', 'user_teams', 'lineups', 'pools', 'pool_members',
+    'stage_results', 'ttt_results', 'classification_standings', 'final_standings',
+    'rider_points', 'user_scores', 'login_events',
+  ]) {
+    dump[t] = await all(`SELECT * FROM ${t}`);
+  }
+  res.json(dump);
 }));
 
 // Fallback: server-side fetch (werkt alleen als PCS de server niet blokkeert).

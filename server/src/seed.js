@@ -35,7 +35,7 @@ export async function runSeed({ quiet = false } = {}) {
     for (const t of [
       'user_scores', 'rider_points', 'final_standings', 'classification_standings',
       'ttt_results', 'stage_results', 'lineups', 'user_teams', 'pool_members', 'pools',
-      'password_resets', 'sessions', 'users', 'riders', 'stage_sync', 'stages', 'cycling_teams',
+      'login_events', 'password_resets', 'sessions', 'users', 'riders', 'stage_sync', 'stages', 'cycling_teams',
     ]) await h.run(`DELETE FROM ${t}`);
 
     // --- ploegen en renners ---------------------------------------------------

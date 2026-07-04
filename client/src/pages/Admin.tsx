@@ -18,6 +18,7 @@ interface AdminUser {
   last_login_at: string | null;
   team_count: number;
 }
+interface LoginEvent { at: string; method: string; name: string; email: string; }
 
 const fmtDT = (iso: string | null) =>
   iso ? new Date(iso).toLocaleString('nl-NL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
@@ -72,6 +73,8 @@ export default function Admin() {
   const [withdrawRider, setWithdrawRider] = useState<number | null>(null);
   const [withdrawStage, setWithdrawStage] = useState('');
   const [users, setUsers] = useState<AdminUser[]>([]);
+  const [logins, setLogins] = useState<LoginEvent[]>([]);
+  const [showLogins, setShowLogins] = useState(false);
 
   const load = () => api('/api/admin/overview').then((r) => setStages(r.stages));
 
@@ -79,7 +82,7 @@ export default function Admin() {
     load();
     api('/api/riders').then((r) => setRiders(r.riders));
     api('/api/admin/teams').then((r) => setTeams(r.teams));
-    api('/api/admin/users').then((r) => setUsers(r.users));
+    api('/api/admin/users').then((r) => { setUsers(r.users); setLogins(r.logins || []); });
   }, []);
 
   const setSource = async (nr: number, source: 'auto' | 'manual') => {
@@ -383,6 +386,31 @@ export default function Admin() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      <div className="card">
+        <div className="row spread">
+          <h2 style={{ margin: 0 }}>Recente logins</h2>
+          <button className="btn btn-ghost btn-sm" onClick={() => setShowLogins(!showLogins)}>
+            {showLogins ? 'Verbergen' : `Tonen (${logins.length})`}
+          </button>
+        </div>
+        {showLogins && (
+          <table style={{ marginTop: 10 }}>
+            <thead>
+              <tr><th>Wanneer</th><th>Wie</th><th>Methode</th></tr>
+            </thead>
+            <tbody>
+              {logins.map((l, i) => (
+                <tr key={i}>
+                  <td>{fmtDT(l.at)}</td>
+                  <td>{l.name} <span className="muted">({l.email})</span></td>
+                  <td>{l.method}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );
