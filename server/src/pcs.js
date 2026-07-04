@@ -76,6 +76,23 @@ export function matchByName(names, entities) {
   return { matched, unmatched };
 }
 
+// Ploegnamen wijken vaker af ("Team Visma | Lease a Bike" vs "Visma | Lease a Bike"):
+// match als de genormaliseerde woorden van de één een deelverzameling van de ander zijn,
+// mits dat precies één kandidaat oplevert.
+export function matchTeamsByName(names, teams) {
+  const prepared = teams.map((t) => ({ t, tokens: new Set(normalizeName(t.name).split(' ')) }));
+  const isSubset = (a, b) => [...a].every((x) => b.has(x));
+  const matched = new Map();
+  const unmatched = [];
+  for (const n of names) {
+    const tokens = new Set(normalizeName(n).split(' '));
+    const cands = prepared.filter(({ tokens: tt }) => isSubset(tt, tokens) || isSubset(tokens, tt));
+    if (cands.length === 1) matched.set(n, cands[0].t);
+    else unmatched.push(n);
+  }
+  return { matched, unmatched };
+}
+
 export async function fetchStagePage(stageNr) {
   const url = `${PCS_BASE}/${RACE_PATH}/stage-${stageNr}`;
   const res = await fetch(url, {

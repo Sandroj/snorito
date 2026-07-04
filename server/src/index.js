@@ -12,6 +12,7 @@ import {
   STAGE_POINTS, TTT_POINTS, CLASS_POINTS_AFTER_STAGE, TEAM_POINTS_AFTER_STAGE, FINAL_TEAM_POINTS,
 } from './points.js';
 import { ensureSeeded } from './seed.js';
+import { runSync, saveStageResult } from './sync.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -542,7 +543,12 @@ app.get('/api/my/points/:nr', ah(async (req, res) => {
 app.get('/api/admin/overview', ah(async (req, res) => {
   const user = await requireAdmin(req, res); if (!user) return;
   const stages = [];
-  for (const s of await all('SELECT * FROM stages ORDER BY nr')) {
+  const stageRows = await all(`
+    SELECT s.*, y.checked_at AS sync_checked_at, y.error AS sync_error
+    FROM stages s LEFT JOIN stage_sync y ON y.stage_nr = s.nr
+    ORDER BY s.nr
+  `);
+  for (const s of stageRows) {
     stages.push({
       ...s,
       hasResult: s.type === 'TTT'
@@ -582,29 +588,19 @@ app.put('/api/admin/stage/:nr/result', ah(async (req, res) => {
   const stage = await get('SELECT * FROM stages WHERE nr = ?', [nr]);
   if (!stage) return res.status(404).json({ error: 'Etappe niet gevonden' });
 
-  const { positions = [], tttPositions = [], classifications = {} } = req.body || {};
-  await tx(async (h) => {
-    await h.run('DELETE FROM stage_results WHERE stage_nr = ?', [nr]);
-    await h.run('DELETE FROM ttt_results WHERE stage_nr = ?', [nr]);
-    await h.run('DELETE FROM classification_standings WHERE stage_nr = ?', [nr]);
+  // Handmatig opgeslagen uitslagen worden door de PCS-autosync met rust gelaten.
+  await saveStageResult(nr, req.body || {}, 'manual');
+  await run('UPDATE stage_sync SET error = NULL WHERE stage_nr = ?', [nr]);
+  res.json({ ok: true });
+}));
 
-    if (stage.type === 'TTT') {
-      for (const p of tttPositions) {
-        if (p.teamId) await h.run('INSERT INTO ttt_results (stage_nr, position, team_id) VALUES (?, ?, ?)', [nr, p.position, p.teamId]);
-      }
-    } else {
-      for (const p of positions) {
-        if (p.riderId) await h.run('INSERT INTO stage_results (stage_nr, position, rider_id) VALUES (?, ?, ?)', [nr, p.position, p.riderId]);
-      }
-    }
-
-    for (const cls of CLASSIFICATIONS) {
-      const arr = classifications[cls] || [];
-      for (let i = 0; i < arr.length; i++) {
-        if (arr[i]) await h.run('INSERT INTO classification_standings (stage_nr, classification, position, rider_id) VALUES (?, ?, ?, ?)', [nr, cls, i + 1, arr[i]]);
-      }
-    }
-  });
+// Zet de uitslagbron van een etappe terug naar 'auto' (of expliciet op 'manual'),
+// zodat de PCS-autosync hem weer oppakt of juist met rust laat.
+app.put('/api/admin/stage/:nr/source', ah(async (req, res) => {
+  const user = await requireAdmin(req, res); if (!user) return;
+  const { source } = req.body || {};
+  if (!['auto', 'manual'].includes(source)) return res.status(400).json({ error: 'Ongeldige bron' });
+  await run('UPDATE stages SET result_source = ? WHERE nr = ?', [source, Number(req.params.nr)]);
   res.json({ ok: true });
 }));
 
@@ -660,6 +656,19 @@ app.put('/api/admin/rider/:id/withdrawn', ah(async (req, res) => {
 app.get('/api/admin/teams', ah(async (req, res) => {
   const user = await requireAdmin(req, res); if (!user) return;
   res.json({ teams: await all('SELECT * FROM cycling_teams ORDER BY name') });
+}));
+
+// --- cron -------------------------------------------------------------------
+// Aangeroepen door GitHub Actions (elke 10 min): zet etappes op 'gestart' en
+// importeert/verwerkt uitslagen van ProCyclingStats. Zie server/src/sync.js.
+
+app.post('/api/cron/pcs-sync', ah(async (req, res) => {
+  const secret = process.env.CRON_SECRET;
+  const given = (req.headers.authorization || '').replace('Bearer ', '') || req.query.key;
+  if (!secret || given !== secret) return res.status(401).json({ error: 'Ongeldige sleutel' });
+  const result = await runSync();
+  console.log('PCS-sync:', result.report.length ? result.report.join(' | ') : 'geen acties');
+  res.json(result);
 }));
 
 // --- productie: geserveerde frontend ----------------------------------------
