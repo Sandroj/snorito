@@ -1,30 +1,35 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { api } from '../api';
-import { PointsBreakdown, BreakdownRow } from '../components/PointsBreakdown';
+import { useSession } from '../App';
+import { Daguitslag, StageDetail } from '../components/Daguitslag';
 
 interface StageScore { stageNr: number; points: number; }
 
+// "Uitslagen" — je eigen scores per etappe, uitklapbaar met de volledige
+// daguitslag, je opstelling en de misgelopen punten (dezelfde weergave als
+// onder een deelnemer in het klassement, maar dan voor jezelf en zonder team).
 export default function Points() {
+  const { user } = useSession();
   const [scores, setScores] = useState<StageScore[]>([]);
   const [openStage, setOpenStage] = useState<number | null>(null);
-  const [breakdown, setBreakdown] = useState<BreakdownRow[]>([]);
+  const [detail, setDetail] = useState<StageDetail | null>(null);
 
   useEffect(() => {
     api('/api/my/points').then((r) => setScores(r.scores));
   }, []);
 
   useEffect(() => {
-    if (openStage == null) return;
-    api(`/api/my/points/${openStage}`).then((r) => setBreakdown(r.breakdown));
-  }, [openStage]);
+    if (openStage == null || !user) return;
+    setDetail(null);
+    api(`/api/participants/${user.id}/points/${openStage}`).then(setDetail);
+  }, [openStage, user]);
 
   const total = scores.reduce((s, x) => s + x.points, 0);
   const label = (nr: number) => (nr === 0 ? 'Eindklassement' : `Etappe ${nr}`);
 
   return (
     <div className="fade-in">
-      <h1>Mijn punten</h1>
+      <h1>Mijn uitslagen</h1>
       <div className="total-hero">
         <div className="lab">Totaalscore</div>
         <div className="big">{total}</div>
@@ -36,8 +41,8 @@ export default function Points() {
       {scores.length === 0 && (
         <div className="card empty">
           <div className="emoji">⏱️</div>
-          Zodra de eerste etappe is verwerkt zie je hier je punten per etappe,<br />
-          uitgesplitst per renner. <Link to="/regels"><b>Hoe verdien ik punten? →</b></Link>
+          Zodra de eerste etappe is verwerkt zie je hier je uitslag per etappe,<br />
+          met je opstelling en de punten die je op de bank liet liggen.
         </div>
       )}
 
@@ -47,7 +52,7 @@ export default function Points() {
             <b>{label(s.stageNr)}</b>
             <span className="pts">{s.points} pt</span>
           </div>
-          {openStage === s.stageNr && <PointsBreakdown rows={breakdown} />}
+          {openStage === s.stageNr && (detail ? <Daguitslag d={detail} /> : <div className="muted" style={{ margin: '10px 2px' }}>Laden…</div>)}
         </div>
       ))}
     </div>

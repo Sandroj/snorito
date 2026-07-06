@@ -90,7 +90,8 @@ export default function App() {
           <Route path="/opstelling" element={<Lineup />} />
           <Route path="/klassement" element={<Ranking />} />
           <Route path="/poules" element={<Pools />} />
-          <Route path="/punten" element={<Points />} />
+          <Route path="/uitslagen" element={<Points />} />
+          <Route path="/punten" element={<Navigate to="/uitslagen" />} />
           <Route path="/regels" element={<Rules />} />
           <Route path="/reset" element={<Reset />} />
           {user.isAdmin && <Route path="/admin" element={<Admin />} />}
@@ -100,9 +101,9 @@ export default function App() {
       <nav className="tabs">
         <NavLink to="/team"><ShirtIcon />Team</NavLink>
         <NavLink to="/opstelling"><LineupIcon />Opstelling</NavLink>
+        <NavLink to="/uitslagen"><StarIcon />Uitslagen</NavLink>
         <NavLink to="/klassement"><TrophyIcon />Klassement</NavLink>
         <NavLink to="/poules"><UsersIcon />Poules</NavLink>
-        <NavLink to="/punten"><StarIcon />Punten</NavLink>
       </nav>
     </SessionContext.Provider>
   );
