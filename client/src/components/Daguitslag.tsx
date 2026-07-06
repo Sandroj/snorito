@@ -14,6 +14,7 @@ export interface PointRow {
   classPoints: number;
   teamPoints: number;
   total: number;
+  swapIn?: boolean;
 }
 
 export interface StageDetail {
@@ -48,7 +49,7 @@ function PointTable({ rows, empty }: { rows: PointRow[]; empty: string }) {
       </thead>
       <tbody>
         {rows.map((r) => (
-          <tr key={r.riderId}>
+          <tr key={r.riderId} className={r.swapIn ? 'swap-in' : ''}>
             <td className="pos">{posLabel(r.position)}</td>
             <td>
               <RiderInfo shirt={r.teamShirt} nationality={r.nationality} name={r.name} team={r.team} extra={captainChip(r.isCaptain)} />
@@ -84,7 +85,7 @@ export function Daguitslag({ d }: { d: StageDetail }) {
       <PointTable rows={d.lineup ?? []} empty="Geen opstelling voor deze etappe." />
 
       <div className="daguitslag-label">
-        Niet opgesteld <span className="legend">punten die je misliep</span>
+        Niet opgesteld <span className="legend">groen = had je opstelling verbeterd</span>
       </div>
       <PointTable rows={d.bench ?? []} empty="Alle renners uit je team stonden opgesteld." />
     </div>

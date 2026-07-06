@@ -740,10 +740,22 @@ async function stageDaguitslag(userId, nr, stage) {
   };
 
   const lineup = await buildRows(lineupIds, true);
-  const bench = await buildRows(benchIds, false);
+  const bench = await buildRows(benchIds, false); // gesorteerd op totaal, aflopend
   const behaald = lineup.reduce((s, r) => s + r.total, 0);
-  const gemist = bench.reduce((s, r) => s + r.total, 0);
-  const gemistCount = bench.filter((r) => r.total > 0).length;
+
+  // Misgelopen = de nettowinst als je je slechtst scorende opgestelde renners had
+  // geruild voor je best scorende bankzitters — maar alleen ruilen die punten
+  // opleveren. Beste bankzitter tegen slechtste opsteller; stop zodra ruilen niet
+  // meer loont (bankzitter <= opsteller). De ingewisselde bankzitters: swapIn=true.
+  const worstLineup = lineup.map((r) => r.total).sort((a, b) => a - b);
+  let gemist = 0, gemistCount = 0;
+  for (let i = 0; i < Math.min(lineup.length, bench.length); i++) {
+    const gain = bench[i].total - worstLineup[i];
+    if (gain <= 0) break;
+    gemist += gain;
+    gemistCount++;
+  }
+  bench.forEach((b, i) => { b.swapIn = i < gemistCount; });
 
   return { stageNr: nr, type: stage.type, behaald, gemist, gemistCount, lineup, bench };
 }
