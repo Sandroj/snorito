@@ -389,6 +389,46 @@ app.get('/api/stages', ah(async (_req, res) => {
   res.json({ stages: await cached('stages', 15_000, () => all('SELECT * FROM stages ORDER BY nr')) });
 }));
 
+// Huidige stand in de vier klassementen (na de laatst verwerkte etappe), als
+// map rider_id -> { alg, punt, berg, jong } positie. Voor de trui-badges bij de
+// opstelling. Gecachet; bustCache() bij elke nieuwe uitslag.
+app.get('/api/classifications/current', ah(async (_req, res) => {
+  const data = await cached('classifications-current', 30_000, async () => {
+    const last = (await get("SELECT MAX(nr) AS m FROM stages WHERE status = 'finished'")).m || null;
+    const byRider = {};
+    if (last) {
+      const rows = await all('SELECT classification, position, rider_id FROM classification_standings WHERE stage_nr = ?', [last]);
+      for (const r of rows) (byRider[r.rider_id] ||= {})[r.classification] = r.position;
+    }
+    return { stageNr: last, byRider };
+  });
+  res.json(data);
+}));
+
+// Resultaten van één renner over alle verwerkte etappes: finishpositie en
+// punten (rit/klass./team/totaal). Voor het uitklappen bij de opstelling.
+app.get('/api/rider/:id/results', ah(async (req, res) => {
+  const id = Number(req.params.id);
+  const stages = await all("SELECT nr, van, naar, type FROM stages WHERE status = 'finished' ORDER BY nr");
+  const posByStage = new Map((await all('SELECT stage_nr, position FROM stage_results WHERE rider_id = ?', [id])).map((r) => [r.stage_nr, r.position]));
+  const ptsByStage = new Map();
+  for (const p of await all('SELECT stage_nr, category, points FROM rider_points WHERE rider_id = ?', [id])) {
+    const cur = ptsByStage.get(p.stage_nr) || {};
+    cur[p.category] = p.points;
+    ptsByStage.set(p.stage_nr, cur);
+  }
+  const results = stages.map((s) => {
+    const pts = ptsByStage.get(s.nr) || {};
+    const stagePoints = pts.stage || 0, classPoints = pts.class || 0, teamPoints = pts.team || 0;
+    return {
+      stageNr: s.nr, van: s.van, naar: s.naar, type: s.type,
+      position: posByStage.get(s.nr) ?? null,
+      stagePoints, classPoints, teamPoints, total: stagePoints + classPoints + teamPoints,
+    };
+  });
+  res.json({ results });
+}));
+
 // Spelregels en puntentabellen — rechtstreeks uit de puntenmotor (server/src/points.js),
 // zodat wat de speler leest altijd overeenkomt met wat er wordt berekend.
 app.get('/api/rules', (_req, res) => {
@@ -565,6 +605,18 @@ app.get('/api/ranking', ah(async (req, res) => {
   }
   const lastFinished = (await get("SELECT MAX(nr) AS m FROM stages WHERE status = 'finished'")).m || 0;
 
+  // Eerstvolgende open etappe + wie daarvoor al een complete opstelling heeft
+  // (9 renners). Voor iedereen zichtbaar — alleen het feit, niet de inhoud.
+  const nextOpen = (await get("SELECT MIN(nr) AS m FROM stages WHERE status = 'open'")).m || null;
+  const readySet = new Set();
+  if (nextOpen) {
+    const ready = await all(
+      'SELECT user_id FROM lineups WHERE stage_nr = ? GROUP BY user_id HAVING COUNT(*) = ?',
+      [nextOpen, LINEUP_SIZE]
+    );
+    for (const r of ready) readySet.add(r.user_id);
+  }
+
   const rows = await all(`
     SELECT u.id, u.name, u.created_at,
       COALESCE((SELECT SUM(points) FROM user_scores s WHERE s.user_id = u.id), 0) AS total,
@@ -577,10 +629,12 @@ app.get('/api/ranking', ah(async (req, res) => {
 
   res.json({
     lastFinishedStage: lastFinished || null,
+    nextStageNr: nextOpen,
     ranking: rows.map((r, i) => ({
       position: i + 1, userId: r.id, name: r.name,
       total: r.total, lastStage: r.last_stage, finalPoints: r.final_points,
       isMe: r.id === user.id,
+      lineupReady: readySet.has(r.id),
     })),
   });
 }));

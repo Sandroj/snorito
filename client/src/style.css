@@ -432,6 +432,25 @@ table.daguitslag td.pos, table.daguitslag th.pos-h { width: 26px; text-align: ce
 .daguitslag-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 16px 2px 6px; }
 .daguitslag-label .legend { font-weight: 500; text-transform: none; letter-spacing: 0; margin-left: 8px; color: var(--muted); }
 
+/* Trui-posities (geel/groen/bol/wit) bij de renners in de opstelling */
+.jerseys { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
+.jersey { min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; font-size: 10.5px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; font-variant-numeric: tabular-nums; }
+.jersey-geel { background: var(--geel); color: #6E5200; }
+.jersey-groen { background: var(--groen); color: #fff; }
+.jersey-bol { background: #fff; color: var(--rood); border: 1.5px dotted var(--rood); }
+.jersey-wit { background: #fff; color: var(--ink); border: 1px solid #D0D5DD; }
+
+/* Uitklap-chevron per renner (resultaten per etappe) */
+.expand-btn { background: none; border: none; color: var(--muted); font-size: 15px; line-height: 1; padding: 4px 6px; cursor: pointer; transition: transform .15s, color .15s; flex-shrink: 0; }
+.expand-btn.open { transform: rotate(180deg); color: var(--ink); }
+.rider-results { padding: 4px 12px 14px; }
+.rider-results.muted { padding: 10px 12px; font-size: 13px; }
+
+/* Opslaan-bevestiging + opstelling-klaar-vinkje in het klassement */
+.btn-saved { background: var(--groen); color: #fff; border-color: var(--groen); }
+.lineup-ok { color: var(--groen); margin-left: 6px; vertical-align: -2px; display: inline-flex; }
+.lineup-missing { color: #CDD2DA; margin-left: 6px; font-size: 12px; }
+
 /* Uitklapbare renner-rij (klik = details, +/- = selecteren) */
 .rider-item { border-bottom: 1px solid #F2F4F7; }
 .rider-item:last-child { border-bottom: none; }

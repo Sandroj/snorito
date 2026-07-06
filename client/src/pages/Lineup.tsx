@@ -1,10 +1,54 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, cachedApi, flag, fmtDate, fmtTime, Rider, Stage, terrainLabel, typeChipClass } from '../api';
-import { ClockIcon, MountainIcon } from '../components/Icons';
+import { ClockIcon, MountainIcon, CheckIcon } from '../components/Icons';
 import { Shirt } from '../components/Quality';
 
 const LINEUP_SIZE = 9;
+
+// Positie in de vier klassementen als gekleurde trui-badges (geel/groen/bol/wit).
+const JERSEYS: [string, string, string][] = [
+  ['alg', 'jersey-geel', 'Algemeen klassement'],
+  ['punt', 'jersey-groen', 'Puntenklassement'],
+  ['berg', 'jersey-bol', 'Bergklassement'],
+  ['jong', 'jersey-wit', 'Jongerenklassement'],
+];
+function JerseyBadges({ pos }: { pos?: Record<string, number> }) {
+  if (!pos) return null;
+  const shown = JERSEYS.filter(([k]) => pos[k] != null);
+  if (!shown.length) return null;
+  return (
+    <div className="jerseys">
+      {shown.map(([k, cls, label]) => (
+        <span key={k} className={`jersey ${cls}`} title={`${label}: ${pos[k]}e`}>{pos[k]}</span>
+      ))}
+    </div>
+  );
+}
+
+// Resultaten van één renner over de verwerkte etappes (finishpositie + punten).
+function RiderResults({ riderId }: { riderId: number }) {
+  const [rows, setRows] = useState<{ stageNr: number; van: string; naar: string; position: number | null; total: number }[] | null>(null);
+  useEffect(() => { api(`/api/rider/${riderId}/results`).then((r) => setRows(r.results)); }, [riderId]);
+  if (!rows) return <div className="rider-results muted">Laden…</div>;
+  if (rows.length === 0) return <div className="rider-results muted">Nog geen verwerkte etappes.</div>;
+  return (
+    <div className="rider-results">
+      <table className="daguitslag">
+        <thead><tr><th>Etappe</th><th className="num">Positie</th><th className="num">Punten</th></tr></thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.stageNr}>
+              <td>Et. {r.stageNr}<div className="muted" style={{ fontSize: 11 }}>{r.van} → {r.naar}</div></td>
+              <td className="num">{r.position ?? '—'}</td>
+              <td className="num"><b>{r.total}</b></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 export function StageCard({ stage }: { stage: Stage }) {
   return (
@@ -48,12 +92,19 @@ export default function Lineup() {
   const [captainId, setCaptainId] = useState<number | null>(null);
   const [locked, setLocked] = useState(false);
   const [msg, setMsg] = useState<{ kind: 'error' | 'success'; text: string } | null>(null);
+  const [classPos, setClassPos] = useState<Record<number, Record<string, number>>>({});
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    Promise.all([cachedApi('/api/stages', 60_000), cachedApi('/api/riders'), api('/api/team')]).then(([s, r, t]) => {
+    Promise.all([
+      cachedApi('/api/stages', 60_000), cachedApi('/api/riders'), api('/api/team'),
+      cachedApi('/api/classifications/current', 30_000),
+    ]).then(([s, r, t, c]) => {
       setStages(s.stages);
       setRiders(r.riders);
       setTeamIds(t.riderIds);
+      setClassPos(c.byRider || {});
       const firstOpen = s.stages.find((st: Stage) => st.status === 'open');
       setStageNr(firstOpen ? firstOpen.nr : s.stages[0]?.nr ?? null);
     });
@@ -95,7 +146,9 @@ export default function Lineup() {
     setMsg(null);
     try {
       await api(`/api/lineup/${stageNr}`, { method: 'PUT', json: { riderIds: [...selected], captainId } });
-      setMsg({ kind: 'success', text: 'Opstelling opgeslagen' });
+      setMsg({ kind: 'success', text: 'Je opstelling is opgeslagen' });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
     } catch (e: any) {
       setMsg({ kind: 'error', text: e.message });
     }
@@ -142,40 +195,50 @@ export default function Lineup() {
               {captainId ? riders.find((r) => r.id === captainId)?.name ?? '—' : '—'}
             </div>
           </div>
-          <button className="btn btn-primary" onClick={save} disabled={locked || selected.size !== LINEUP_SIZE || !captainId}>
-            Opslaan
+          <button className={`btn ${saved ? 'btn-saved' : 'btn-primary'}`} onClick={save} disabled={locked || selected.size !== LINEUP_SIZE || !captainId}>
+            {saved ? 'Opgeslagen ✓' : 'Opslaan'}
           </button>
         </div>
         <div className="progress"><div style={{ width: `${(selected.size / LINEUP_SIZE) * 100}%` }} /></div>
       </div>
-      {msg && <div className={msg.kind}>{msg.text}</div>}
+      {msg && (
+        <div className={msg.kind}>
+          {msg.kind === 'success' && <CheckIcon size={16} />} {msg.text}
+        </div>
+      )}
 
       <div className="card flush">
         {teamRiders.map((r) => {
           const isSel = selected.has(r.id);
           const isCaptain = captainId === r.id;
           const out = r.last_started_stage != null && stage && r.last_started_stage < stage.nr;
+          const isOpen = expandedId === r.id;
           return (
-            <div key={r.id} className={`rider-row ${isSel ? 'selected' : ''} ${out ? 'disabled' : ''}`}>
-              <Shirt url={r.team_shirt} size={28} />
-              <span className="flag" onClick={() => !out && toggle(r.id)}>{flag(r.nationality)}</span>
-              <div className="info" onClick={() => !out && toggle(r.id)}>
-                <div className="name">
-                  {r.name}
-                  {isCaptain && <span className="badge-captain">KOPMAN</span>}
-                  {out && <span className="chip chip-grijs">uitgevallen</span>}
+            <div key={r.id} className="rider-item">
+              <div className={`rider-row ${isSel ? 'selected' : ''} ${out ? 'disabled' : ''}`}>
+                <Shirt url={r.team_shirt} size={28} />
+                <span className="flag" onClick={() => !out && toggle(r.id)}>{flag(r.nationality)}</span>
+                <div className="info" onClick={() => !out && toggle(r.id)}>
+                  <div className="name">
+                    {r.name}
+                    <span className={typeChipClass(r.type)}>{r.type}</span>
+                    {isCaptain && <span className="badge-captain">KOPMAN</span>}
+                    {out && <span className="chip chip-grijs">uitgevallen</span>}
+                  </div>
+                  <div className="sub">{r.team_name}</div>
+                  <JerseyBadges pos={classPos[r.id]} />
                 </div>
-                <div className="sub">{r.team_name}</div>
+                {isSel && !locked && (
+                  <button className={`capbtn ${isCaptain ? 'captain' : ''}`} onClick={() => setCaptainId(r.id)} title="Maak kopman" aria-label="Maak kopman">
+                    ★
+                  </button>
+                )}
+                {!locked && (
+                  <input type="checkbox" checked={isSel} readOnly onClick={() => !out && toggle(r.id)} style={{ width: 19, height: 19, accentColor: '#FFD100' }} />
+                )}
+                <button className={`expand-btn ${isOpen ? 'open' : ''}`} onClick={() => setExpandedId(isOpen ? null : r.id)} aria-label="Resultaten per etappe">▾</button>
               </div>
-              <span className={typeChipClass(r.type)} onClick={() => !out && toggle(r.id)}>{r.type}</span>
-              {isSel && !locked && (
-                <button className={`capbtn ${isCaptain ? 'captain' : ''}`} onClick={() => setCaptainId(r.id)} title="Maak kopman" aria-label="Maak kopman">
-                  ★
-                </button>
-              )}
-              {!locked && (
-                <input type="checkbox" checked={isSel} readOnly onClick={() => !out && toggle(r.id)} style={{ width: 19, height: 19, accentColor: '#FFD100' }} />
-              )}
+              {isOpen && <RiderResults riderId={r.id} />}
             </div>
           );
         })}

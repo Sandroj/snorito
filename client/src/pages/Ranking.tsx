@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api, euroShort } from '../api';
 import { RiderInfo } from '../components/RiderInfo';
 import { Daguitslag, StageDetail } from '../components/Daguitslag';
+import { CheckIcon } from '../components/Icons';
 
 interface RankRow {
   position: number;
@@ -11,6 +12,7 @@ interface RankRow {
   lastStage: number;
   finalPoints: number;
   isMe: boolean;
+  lineupReady: boolean;
 }
 
 interface Pool { id: number; name: string; }
@@ -103,6 +105,7 @@ export default function Ranking() {
   const [poolId, setPoolId] = useState<number | 'all'>('all');
   const [rows, setRows] = useState<RankRow[]>([]);
   const [lastStage, setLastStage] = useState<number | null>(null);
+  const [nextStage, setNextStage] = useState<number | null>(null);
   const [selected, setSelected] = useState<number | null>(null);
 
   useEffect(() => {
@@ -114,6 +117,7 @@ export default function Ranking() {
     api(`/api/ranking${q}`).then((r) => {
       setRows(r.ranking);
       setLastStage(r.lastFinishedStage);
+      setNextStage(r.nextStageNr ?? null);
     });
   }, [poolId]);
 
@@ -127,6 +131,11 @@ export default function Ranking() {
       <p className="page-sub">
         {lastStage ? `Stand na etappe ${lastStage} · tik op een deelnemer voor team en scores.` : 'De Tour is nog niet begonnen — iedereen staat op nul.'}
       </p>
+      {nextStage && (
+        <p className="page-sub" style={{ marginTop: -6 }}>
+          <span className="lineup-ok"><CheckIcon size={13} /></span> = opstelling voor etappe {nextStage} al ingevuld
+        </p>
+      )}
 
       <div className="pill-select">
         <button className={poolId === 'all' ? 'active' : ''} onClick={() => setPoolId('all')}>Algemeen</button>
@@ -154,7 +163,12 @@ export default function Ranking() {
                 onClick={() => setSelected(r.userId)}
               >
                 <td style={{ paddingLeft: 16 }}>{r.position}</td>
-                <td>{r.name}{r.isMe ? ' (jij)' : ''}</td>
+                <td>
+                  {r.name}{r.isMe ? ' (jij)' : ''}
+                  {nextStage && (r.lineupReady
+                    ? <span className="lineup-ok" title={`Opstelling etappe ${nextStage} ingevuld`}><CheckIcon size={13} /></span>
+                    : <span className="lineup-missing" title={`Nog geen opstelling voor etappe ${nextStage}`}>○</span>)}
+                </td>
                 <td className="num">{lastStage ? r.lastStage : '—'}</td>
                 <td className="num" style={{ paddingRight: 16 }}><b>{r.total}</b></td>
               </tr>

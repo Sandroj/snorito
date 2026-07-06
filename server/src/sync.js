@@ -111,9 +111,11 @@ async function differsFromStored(stage, payload) {
   }
   for (const cls of ['alg', 'punt', 'berg', 'jong']) {
     const stored = await all(
-      'SELECT rider_id FROM classification_standings WHERE stage_nr = ? AND classification = ? ORDER BY position', [stage.nr, cls]
+      'SELECT position, rider_id FROM classification_standings WHERE stage_nr = ? AND classification = ? ORDER BY position', [stage.nr, cls]
     );
-    if (stored.map((r) => r.rider_id).join(',') !== (payload.classifications[cls] || []).join(',')) return true;
+    const arr = payload.classifications[cls] || [];
+    const fresh = arr.map((id, i) => (id ? `${i + 1}:${id}` : null)).filter(Boolean).join(',');
+    if (stored.map((r) => `${r.position}:${r.rider_id}`).join(',') !== fresh) return true;
   }
   return false;
 }
@@ -179,11 +181,6 @@ export async function importStageHtml(stageNr, html) {
 function payloadFromLetour(stage, fragments, riders, teams) {
   const payload = { positions: [], tttPositions: [], classifications: {} };
   const byBib = new Map(riders.filter((r) => r.bib != null).map((r) => [r.bib, r]));
-  const riderId = (row, context) => {
-    const rider = byBib.get(row.bib);
-    if (!rider) throw new Error(`Onbekend rugnummer van letour.fr (${context}): #${row.bib}`);
-    return rider.id;
-  };
 
   if (stage.type === 'TTT') {
     const rows = parseTeamRanking(fragments.ete).slice(0, TOP_TTT);
@@ -217,11 +214,23 @@ function payloadFromLetour(stage, fragments, riders, teams) {
     // Punten/berg: 0-punten-rijen zijn opvulling, maar bij een TTT is de
     // nummer 1 de officiële truidrager en telt wél (zie letour.js).
     if (cls === 'punt' || cls === 'berg') rows = filterJerseyPlaceholders(rows, stage.type === 'TTT');
-    classLists[cls] = rows.slice(0, TOP_CLASS);
+    classLists[cls] = rows;
   }
   if (classLists.alg.length < TOP_CLASS) return null;
+  // Volledige klassementen bewaren (voor positie-inzage van álle renners), op de
+  // échte positie (goed bij gelijke stand, PK is uniek). Top 5 telt voor de
+  // punten en moet exact matchen; daaronder slaan we onbekende rugnummers over.
   for (const cls of Object.keys(CLS_FRAGMENTS)) {
-    payload.classifications[cls] = classLists[cls].map((r) => riderId(r, cls));
+    const arr = [];
+    for (const r of classLists[cls]) {
+      const rider = byBib.get(r.bib);
+      if (!rider) {
+        if (r.position <= TOP_CLASS) throw new Error(`Onbekend rugnummer van letour.fr (${cls}): #${r.bib}`);
+        continue;
+      }
+      arr[r.position - 1] = rider.id;
+    }
+    payload.classifications[cls] = arr;
   }
 
   return payload;
