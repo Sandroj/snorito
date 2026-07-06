@@ -866,7 +866,7 @@ async function fullExport() {
   for (const t of [
     'cycling_teams', 'riders', 'stages', 'user_teams', 'lineups', 'pools', 'pool_members',
     'stage_results', 'ttt_results', 'classification_standings', 'final_standings',
-    'rider_points', 'user_scores', 'login_events',
+    'rider_points', 'user_scores', 'login_events', 'lineup_reminders',
   ]) {
     dump[t] = await all(`SELECT * FROM ${t}`);
   }
