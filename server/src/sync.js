@@ -4,7 +4,7 @@
 import { get, all, run, tx } from './db.js';
 import { processStage } from './points.js';
 import { fetchStagePage, parseStagePage, parseTttResults, matchByName, matchTeamsByName } from './pcs.js';
-import { parseRiderRanking, parseTeamRanking, TEAM_ALIASES } from './letour.js';
+import { parseRiderRanking, parseTeamRanking, filterJerseyPlaceholders, TEAM_ALIASES } from './letour.js';
 
 // Etappestarttijden in data/stages_tdf2026.json zijn lokale tijd zonder zone;
 // de hele Tour 2026 valt in de Midden-Europese zomertijd.
@@ -199,10 +199,9 @@ function payloadFromLetour(stage, fragments, riders, teams) {
   const classLists = {};
   for (const [cls, key] of Object.entries(CLS_FRAGMENTS)) {
     let rows = parseRiderRanking(fragments[key]);
-    // Punten- en bergklassement: renners met 0 punten zijn opvulling van
-    // letour.fr (bijv. na een ploegentijdrit) — geen echte klassering, dus
-    // geen truipunten. Tijdklassementen (alg/jong) hebben points null.
-    if (cls === 'punt' || cls === 'berg') rows = rows.filter((r) => r.points !== 0);
+    // Punten/berg: 0-punten-rijen zijn opvulling, maar bij een TTT is de
+    // nummer 1 de officiële truidrager en telt wél (zie letour.js).
+    if (cls === 'punt' || cls === 'berg') rows = filterJerseyPlaceholders(rows, stage.type === 'TTT');
     classLists[cls] = rows.slice(0, TOP_CLASS);
   }
   if (classLists.alg.length < TOP_CLASS) return null;

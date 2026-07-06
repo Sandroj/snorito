@@ -33,6 +33,16 @@ export function parseRiderRanking(html) {
   return rows;
 }
 
+// Punten- en bergklassement met alleen maar 0-punten-rijen (na een
+// ploegentijdrit) zijn grotendeels opvulling van letour.fr — behalve de
+// nummer 1: dat is de officiële truidrager (groen via snelste tussentijd,
+// bol via snelste tijd op de laatste klim) en die krijgt volgens de
+// Scorito-regels wél leiders- en teampunten. Posities 2-5 tellen dan niet.
+// Zie docs/scorito-spelregels.md, sectie "Ploegentijdrit".
+export function filterJerseyPlaceholders(rows, isTTT) {
+  return rows.filter((r) => r.points !== 0 || (isTTT && r.position === 1));
+}
+
 // Ploegenklassementsfragment (ete/etg): positie + ploegnaam.
 export function parseTeamRanking(html) {
   if (!html) return [];
