@@ -633,79 +633,65 @@ async function pointsBreakdown(userId, nr) {
   return { stageNr: nr, breakdown, total: breakdown.reduce((s, b) => s + b.total, 0) };
 }
 
-// Daguitslag van één etappe met opstelling-markering, gezien vanuit één
-// deelnemer: de scorende posities (top 20, of 8 ploegen bij een TTT) met per
-// renner/ploeg de status opgesteld/bank/geen. "gemist" is het volledige totaal
-// (rit + klassement + team) van de bankzitters — renners die de deelnemer wél
-// in zijn team van 20 heeft maar die dag niet opstelde.
+// Puntenoverzicht van één etappe voor één deelnemer: twee lijsten met dezelfde
+// kolommen — "lineup" (de 9 opgestelde renners, met behaalde punten) en "bench"
+// (de niet-opgestelde renners uit het team van 20, met de punten die ze zouden
+// hebben opgeleverd). Elke renner krijgt zijn finishpositie mee (eigen positie,
+// of de ploegpositie bij een TTT). "gemist" is de som van de bank.
 async function stageDaguitslag(userId, nr, stage) {
   const lineupRows = await all('SELECT rider_id, is_captain FROM lineups WHERE user_id = ? AND stage_nr = ?', [userId, nr]);
-  const captainOf = new Map(lineupRows.map((r) => [r.rider_id, !!r.is_captain])); // sleutels = opgestelde renners
-  const teamIds = new Set((await all('SELECT rider_id FROM user_teams WHERE user_id = ?', [userId])).map((r) => r.rider_id));
-  const statusOf = (id) => (captainOf.has(id) ? 'lineup' : teamIds.has(id) ? 'bench' : 'none');
+  const captainOf = new Map(lineupRows.map((r) => [r.rider_id, !!r.is_captain]));
+  const teamIds = (await all('SELECT rider_id FROM user_teams WHERE user_id = ?', [userId])).map((r) => r.rider_id);
+  const lineupIds = lineupRows.map((r) => r.rider_id);
+  const benchIds = teamIds.filter((id) => !captainOf.has(id));
 
-  const benchIds = [...teamIds].filter((id) => !captainOf.has(id));
-  let gemist = 0, gemistCount = 0;
-  if (benchIds.length) {
-    const ph = benchIds.map(() => '?').join(',');
-    const rows = await all(
-      `SELECT rider_id, SUM(points) AS pts FROM rider_points WHERE stage_nr = ? AND rider_id IN (${ph}) GROUP BY rider_id`,
-      [nr, ...benchIds]
-    );
-    for (const r of rows) if (r.pts > 0) { gemist += r.pts; gemistCount++; }
-  }
-  const behaald = (await get('SELECT points FROM user_scores WHERE user_id = ? AND stage_nr = ?', [userId, nr]))?.points ?? 0;
-
-  // Jouw opstelling: de puntenuitsplitsing van de 9 opgestelde renners,
-  // aangevuld met hun finishpositie — zo zie je ook wie het slecht deed en
-  // buiten de scorende top 20 eindigde.
-  const lineup = (await pointsBreakdown(userId, nr)).breakdown;
-  const base = { stageNr: nr, type: stage.type, behaald, gemist, gemistCount, lineup };
-
+  // Finishpositie per renner: eigen positie (rit/ITT) of ploegpositie (TTT).
+  const positionOf = new Map();
   if (stage.type === 'TTT') {
     const teamPos = new Map((await all('SELECT position, team_id FROM ttt_results WHERE stage_nr = ?', [nr])).map((r) => [r.team_id, r.position]));
-    const riderTeam = new Map((await all('SELECT id, team_id FROM riders')).map((r) => [r.id, r.team_id]));
-    for (const l of lineup) l.position = teamPos.get(riderTeam.get(l.riderId)) ?? null;
-
-    const teamRows = await all(`
-      SELECT tr.position, ct.id AS team_id, ct.name AS team_name, ct.shirt_url AS team_shirt
-      FROM ttt_results tr JOIN cycling_teams ct ON ct.id = tr.team_id
-      WHERE tr.stage_nr = ? ORDER BY tr.position
-    `, [nr]);
-    const mine = teamIds.size
-      ? await all(`SELECT id, name, team_id FROM riders WHERE id IN (${[...teamIds].map(() => '?').join(',')})`, [...teamIds])
-      : [];
-    const byTeam = new Map();
-    for (const r of mine) {
-      const arr = byTeam.get(r.team_id) || [];
-      arr.push({ name: r.name, status: statusOf(r.id) });
-      byTeam.set(r.team_id, arr);
-    }
-    const teams = teamRows.map((t) => {
-      const riders = (byTeam.get(t.team_id) || []).sort((a, b) => (b.status === 'lineup' ? 1 : 0) - (a.status === 'lineup' ? 1 : 0));
-      const status = riders.some((r) => r.status === 'lineup') ? 'lineup' : riders.some((r) => r.status === 'bench') ? 'bench' : 'none';
-      return { position: t.position, teamName: t.team_name, teamShirt: t.team_shirt, points: TTT_POINTS[t.position - 1] ?? 0, status, riders };
-    });
-    return { ...base, teams };
+    const inList = teamIds.length ? teamIds : [0];
+    const riderTeam = new Map((await all(`SELECT id, team_id FROM riders WHERE id IN (${inList.map(() => '?').join(',')})`, inList)).map((r) => [r.id, r.team_id]));
+    for (const id of teamIds) positionOf.set(id, teamPos.get(riderTeam.get(id)) ?? null);
+  } else {
+    const pm = new Map((await all('SELECT position, rider_id FROM stage_results WHERE stage_nr = ?', [nr])).map((r) => [r.rider_id, r.position]));
+    for (const id of teamIds) positionOf.set(id, pm.get(id) ?? null);
   }
 
-  // Finishpositie van elke opgestelde renner uit de volledige daguitslag.
-  const posMap = new Map((await all('SELECT position, rider_id FROM stage_results WHERE stage_nr = ?', [nr])).map((r) => [r.rider_id, r.position]));
-  for (const l of lineup) l.position = posMap.get(l.riderId) ?? null;
+  // Bouwt de puntenrijen voor een set renners uit rider_points. Kopman telt
+  // alleen bij de opstelling (×2 op de rituitslag); een bankzitter kan geen
+  // kopman zijn, dus daar altijd de kale "zou hebben gekregen"-punten.
+  const buildRows = async (ids, withCaptain) => {
+    if (!ids.length) return [];
+    const ph = ids.map(() => '?').join(',');
+    const riderRows = await all(
+      `SELECT r.id, r.name, r.nationality, r.type, t.name AS team_name, t.shirt_url AS team_shirt
+       FROM riders r JOIN cycling_teams t ON t.id = r.team_id WHERE r.id IN (${ph})`, ids
+    );
+    const pointRows = await all(`SELECT rider_id, category, points FROM rider_points WHERE stage_nr = ? AND rider_id IN (${ph})`, [nr, ...ids]);
+    const riderById = new Map(riderRows.map((r) => [r.id, r]));
+    const ptsByRider = new Map();
+    for (const p of pointRows) { const c = ptsByRider.get(p.rider_id) || {}; c[p.category] = p.points; ptsByRider.set(p.rider_id, c); }
+    return ids.map((id) => {
+      const r = riderById.get(id); const pts = ptsByRider.get(id) || {};
+      const isCaptain = withCaptain && captainOf.get(id) === true;
+      const stagePoints = (pts.stage || 0) * (isCaptain ? CAPTAIN_FACTOR : 1);
+      return {
+        riderId: id, name: r?.name ?? '?', nationality: r?.nationality ?? '', type: r?.type ?? '',
+        team: r?.team_name ?? '', teamShirt: r?.team_shirt ?? null,
+        position: positionOf.get(id) ?? null, isCaptain,
+        stagePoints, classPoints: pts.class || 0, teamPoints: pts.team || 0,
+        total: stagePoints + (pts.class || 0) + (pts.team || 0),
+      };
+    }).sort((a, b) => b.total - a.total);
+  };
 
-  // Daguitslag: alleen de scorende top 20, met per renner de sterstatus.
-  const resultRows = await all(`
-    SELECT sr.position, r.id, r.name, r.nationality, r.type, t.name AS team_name, t.shirt_url AS team_shirt
-    FROM stage_results sr JOIN riders r ON r.id = sr.rider_id JOIN cycling_teams t ON t.id = r.team_id
-    WHERE sr.stage_nr = ? AND sr.position <= ? ORDER BY sr.position
-  `, [nr, STAGE_POINTS.length]);
-  const rows = resultRows.map((r) => ({
-    position: r.position, riderId: r.id, name: r.name, nationality: r.nationality, type: r.type,
-    team: r.team_name, teamShirt: r.team_shirt,
-    stagePoints: STAGE_POINTS[r.position - 1] ?? 0,
-    status: statusOf(r.id), isCaptain: captainOf.get(r.id) === true,
-  }));
-  return { ...base, rows };
+  const lineup = await buildRows(lineupIds, true);
+  const bench = await buildRows(benchIds, false);
+  const behaald = lineup.reduce((s, r) => s + r.total, 0);
+  const gemist = bench.reduce((s, r) => s + r.total, 0);
+  const gemistCount = bench.filter((r) => r.total > 0).length;
+
+  return { stageNr: nr, type: stage.type, behaald, gemist, gemistCount, lineup, bench };
 }
 
 app.get('/api/my/points/:nr', ah(async (req, res) => {
