@@ -449,6 +449,21 @@ table.daguitslag tr.swap-in { background: #F0FDF4; }
 .daguitslag-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 16px 2px 6px; }
 .daguitslag-label .legend { font-weight: 500; text-transform: none; letter-spacing: 0; margin-left: 8px; color: var(--muted); }
 
+/* Mobiel: bij table-layout:auto liet de browser de tabel uitdijen om de lange
+   rennernaam te tonen (overflow buiten beeld). Met table-layout:fixed + vaste
+   smalle kolommen krijgt de naam de restruimte en kapt hij netjes af (ellipsis).
+   Zelfde tabel wordt gebruikt in Klassement én Uitslagen, dus dit dekt beide. */
+@media (max-width: 480px) {
+  table.daguitslag { table-layout: fixed; width: 100%; font-size: 13px; }
+  table.daguitslag th, table.daguitslag td { padding: 8px 3px; }
+  table.daguitslag th { font-size: 9px; letter-spacing: 0; }
+  table.daguitslag td.num, table.daguitslag th.num { width: 32px; padding-left: 2px; padding-right: 2px; white-space: nowrap; }
+  table.daguitslag td.pos, table.daguitslag th.pos-h { width: 18px; }
+  table.daguitslag .rider-cell { gap: 7px; }
+  table.daguitslag .rider-cell .flag { font-size: 16px; width: 18px; flex-shrink: 0; }
+  .daguitslag-label .legend { display: block; margin-left: 0; margin-top: 2px; }
+}
+
 /* Trui-posities (geel/groen/bol/wit) bij de renners in de opstelling */
 .jerseys { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
 .jersey { min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; font-size: 10.5px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; font-variant-numeric: tabular-nums; }
