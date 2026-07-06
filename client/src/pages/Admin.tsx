@@ -75,6 +75,10 @@ export default function Admin() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [logins, setLogins] = useState<LoginEvent[]>([]);
   const [showLogins, setShowLogins] = useState(false);
+  const [lineupUser, setLineupUser] = useState<number | ''>('');
+  const [lineupStage, setLineupStage] = useState<number | ''>('');
+  const [lineupRiders, setLineupRiders] = useState<(number | null)[]>(Array(9).fill(null));
+  const [lineupCaptain, setLineupCaptain] = useState<number | null>(null);
 
   const load = () => api('/api/admin/overview').then((r) => setStages(r.stages));
 
@@ -158,6 +162,34 @@ export default function Admin() {
       await api('/api/admin/final', { method: 'PUT', json: { standings: finalStandings } });
       await api('/api/admin/final/process', { method: 'POST' });
       setMsg({ kind: 'success', text: 'Eindklassement opgeslagen en verwerkt' });
+    } catch (e: any) {
+      setMsg({ kind: 'error', text: e.message });
+    }
+  };
+
+  const saveLineup = async () => {
+    setMsg(null);
+    if (lineupUser === '' || lineupStage === '') {
+      setMsg({ kind: 'error', text: 'Kies een deelnemer en een etappe' });
+      return;
+    }
+    const ids = lineupRiders.filter((x): x is number => x != null);
+    if (new Set(ids).size !== 9) {
+      setMsg({ kind: 'error', text: 'Kies precies 9 verschillende renners' });
+      return;
+    }
+    if (!lineupCaptain || !ids.includes(lineupCaptain)) {
+      setMsg({ kind: 'error', text: 'Wijs een kopman aan (één van de 9 renners)' });
+      return;
+    }
+    try {
+      await api(`/api/admin/lineup/${lineupUser}/${lineupStage}`, {
+        method: 'PUT',
+        json: { riderIds: ids, captainId: lineupCaptain },
+      });
+      await api(`/api/admin/stage/${lineupStage}/process`, { method: 'POST' });
+      const uName = users.find((u) => u.id === lineupUser)?.name ?? 'deelnemer';
+      setMsg({ kind: 'success', text: `Opstelling voor ${uName} (etappe ${lineupStage}) opgeslagen en verwerkt` });
     } catch (e: any) {
       setMsg({ kind: 'error', text: e.message });
     }
@@ -326,6 +358,57 @@ export default function Admin() {
           <button className="btn btn-ghost" style={{ flexShrink: 0 }} onClick={saveWithdrawn}>Opslaan</button>
         </div>
         <p className="muted" style={{ marginBottom: 0 }}>Leeg = actief. Waarde X = startte etappe X nog wel, daarna niet meer.</p>
+      </div>
+
+      <div className="section-label">Opstelling deelnemer</div>
+      <div className="card">
+        <h2>Opstelling zetten voor een deelnemer</h2>
+        <p className="muted">
+          Voor een deelnemer die te laat was. Werkt ook voor een gesloten etappe. De 9 renners
+          moeten in het team van 20 van die deelnemer zitten. Opslaan verwerkt de etappe meteen opnieuw.
+        </p>
+        <div className="row" style={{ flexWrap: 'nowrap', marginBottom: 12 }}>
+          <select
+            style={{ flex: 1 }}
+            value={lineupUser}
+            onChange={(e) => setLineupUser(e.target.value ? Number(e.target.value) : '')}
+          >
+            <option value="">— deelnemer —</option>
+            {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+          </select>
+          <select
+            style={{ width: 220, flexShrink: 0 }}
+            value={lineupStage}
+            onChange={(e) => setLineupStage(e.target.value ? Number(e.target.value) : '')}
+          >
+            <option value="">— etappe —</option>
+            {stages.map((s) => <option key={s.nr} value={s.nr}>{s.nr}. {s.van} → {s.naar}</option>)}
+          </select>
+        </div>
+        {lineupRiders.map((riderId, i) => (
+          <div className="pos-grid" key={i}>
+            <span className="nr">{i + 1}.</span>
+            <RiderInput riders={riders} value={riderId} onChange={(id) => {
+              const next = [...lineupRiders];
+              next[i] = id;
+              setLineupRiders(next);
+            }} />
+            <label style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0, marginLeft: 8, fontSize: 13 }}>
+              <input
+                type="radio"
+                name="lineup-captain"
+                style={{ width: 'auto' }}
+                checked={riderId != null && lineupCaptain === riderId}
+                disabled={riderId == null}
+                onChange={() => setLineupCaptain(riderId)}
+              />
+              kopman
+            </label>
+          </div>
+        ))}
+        <button className="btn btn-primary" style={{ marginTop: 14 }} onClick={saveLineup}>
+          Opstelling opslaan &amp; verwerken
+        </button>
       </div>
 
       <div className="section-label">Eindklassement</div>

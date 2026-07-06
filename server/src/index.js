@@ -882,6 +882,34 @@ app.post('/api/admin/stage/:nr/process', ah(async (req, res) => {
   }
 }));
 
+// Opstelling van een deelnemer zetten voor een (ook gesloten) etappe — handig
+// als iemand te laat is. Validatie tegen het eigen team van 20 blijft staan.
+// Draai daarna /api/admin/stage/:nr/process om de score te herberekenen.
+app.put('/api/admin/lineup/:userId/:nr', ah(async (req, res) => {
+  const admin = await requireAdmin(req, res); if (!admin) return;
+  const target = await get('SELECT id, name FROM users WHERE id = ?', [Number(req.params.userId)]);
+  if (!target) return res.status(404).json({ error: 'Deelnemer niet gevonden' });
+  const stage = await get('SELECT * FROM stages WHERE nr = ?', [Number(req.params.nr)]);
+  if (!stage) return res.status(404).json({ error: 'Etappe niet gevonden' });
+
+  const riderIds = [...new Set(req.body?.riderIds || [])];
+  const captainId = req.body?.captainId;
+  if (riderIds.length !== LINEUP_SIZE) return res.status(400).json({ error: `Stel precies ${LINEUP_SIZE} renners op` });
+  if (!captainId || !riderIds.includes(captainId)) return res.status(400).json({ error: 'Wijs een kopman aan (één van de 9 opgestelde renners)' });
+
+  const teamIds = new Set((await all('SELECT rider_id FROM user_teams WHERE user_id = ?', [target.id])).map((r) => r.rider_id));
+  if (teamIds.size !== TEAM_SIZE) return res.status(400).json({ error: `${target.name} heeft nog geen compleet team van ${TEAM_SIZE} renners` });
+  if (riderIds.some((id) => !teamIds.has(id))) return res.status(400).json({ error: 'Alleen renners uit het eigen team van deze deelnemer kunnen worden opgesteld' });
+
+  await tx(async (h) => {
+    await h.run('DELETE FROM lineups WHERE user_id = ? AND stage_nr = ?', [target.id, stage.nr]);
+    for (const id of riderIds) {
+      await h.run('INSERT INTO lineups (user_id, stage_nr, rider_id, is_captain) VALUES (?, ?, ?, ?)', [target.id, stage.nr, id, id === captainId ? 1 : 0]);
+    }
+  });
+  res.json({ ok: true });
+}));
+
 app.get('/api/admin/final', ah(async (req, res) => {
   const user = await requireAdmin(req, res); if (!user) return;
   const standings = await all('SELECT classification, position, rider_id FROM final_standings');
