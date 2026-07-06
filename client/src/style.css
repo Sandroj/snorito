@@ -130,6 +130,22 @@ h2 { font-size: 16px; font-weight: 700; margin: 0 0 10px; }
 .error { background: var(--rood-zacht); color: var(--rood); }
 .success { background: var(--groen-zacht); color: var(--groen); }
 
+/* Zwevende melding onderaan het scherm — altijd zichtbaar, ongeacht scrollpositie */
+.toast {
+  position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%);
+  z-index: 1000; max-width: min(520px, calc(100vw - 32px));
+  box-shadow: 0 8px 28px rgba(0, 0, 0, .18);
+  display: flex; align-items: center; gap: 10px;
+  animation: toastIn .2s ease-out;
+}
+.toast.error, .toast.success { margin: 0; }
+.toast .toast-close {
+  background: none; border: none; cursor: pointer; color: inherit;
+  font-size: 18px; line-height: 1; opacity: .6; padding: 0 2px;
+}
+.toast .toast-close:hover { opacity: 1; }
+@keyframes toastIn { from { opacity: 0; transform: translate(-50%, 12px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
 /* ============ Buttons ============ */
 .btn {
   border: none; border-radius: 12px; cursor: pointer; font-weight: 700;

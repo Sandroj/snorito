@@ -82,6 +82,13 @@ export default function Admin() {
 
   const load = () => api('/api/admin/overview').then((r) => setStages(r.stages));
 
+  // Succesmeldingen vanzelf laten verdwijnen; fouten laten staan tot je ze wegklikt.
+  useEffect(() => {
+    if (msg?.kind !== 'success') return;
+    const t = setTimeout(() => setMsg(null), 5000);
+    return () => clearTimeout(t);
+  }, [msg]);
+
   useEffect(() => {
     load();
     api('/api/riders').then((r) => setRiders(r.riders));
@@ -196,13 +203,21 @@ export default function Admin() {
   };
 
   const saveWithdrawn = async () => {
-    if (!withdrawRider) return;
-    await api(`/api/admin/rider/${withdrawRider}/withdrawn`, {
-      method: 'PUT',
-      json: { lastStartedStage: withdrawStage === '' ? null : Number(withdrawStage) },
-    });
-    setMsg({ kind: 'success', text: 'Rennerstatus bijgewerkt' });
-    api('/api/riders').then((r) => setRiders(r.riders));
+    setMsg(null);
+    if (!withdrawRider) {
+      setMsg({ kind: 'error', text: 'Kies eerst een renner' });
+      return;
+    }
+    try {
+      await api(`/api/admin/rider/${withdrawRider}/withdrawn`, {
+        method: 'PUT',
+        json: { lastStartedStage: withdrawStage === '' ? null : Number(withdrawStage) },
+      });
+      setMsg({ kind: 'success', text: 'Rennerstatus bijgewerkt' });
+      api('/api/riders').then((r) => setRiders(r.riders));
+    } catch (e: any) {
+      setMsg({ kind: 'error', text: e.message });
+    }
   };
 
   return (
@@ -214,7 +229,12 @@ export default function Admin() {
           Download volledige export (scores, teams, opstellingen)
         </a>
       </p>
-      {msg && <div className={msg.kind}>{msg.text}</div>}
+      {msg && (
+        <div className={`toast ${msg.kind}`} role="status">
+          <span>{msg.text}</span>
+          <button className="toast-close" aria-label="Sluiten" onClick={() => setMsg(null)}>×</button>
+        </div>
+      )}
 
       <datalist id="rider-list">
         {riders.map((r) => <option key={r.id} value={r.name}>{r.team_name}</option>)}
