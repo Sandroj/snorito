@@ -4,8 +4,10 @@
 import { get, all, run, tx } from './db.js';
 import { processStage } from './points.js';
 import { bustCache } from './cache.js';
-import { fetchStagePage, parseStagePage, parseTttResults, matchByName, matchTeamsByName } from './pcs.js';
-import { parseRiderRanking, parseTeamRanking, filterJerseyPlaceholders, TEAM_ALIASES } from './letour.js';
+import { parseStagePage, parseTttResults, matchByName, matchTeamsByName } from './pcs.js';
+import {
+  parseRiderRanking, parseTeamRanking, filterJerseyPlaceholders, fetchLetourFragments, TEAM_ALIASES,
+} from './letour.js';
 
 // Etappestarttijden in data/stages_tdf2026.json zijn lokale tijd zonder zone;
 // de hele Tour 2026 valt in de Midden-Europese zomertijd.
@@ -248,16 +250,17 @@ export async function noteSyncError(stageNr, message) {
   await note(stageNr, message);
 }
 
-// Directe server-side sync (fetch vanaf de server zelf). Werkt alleen als PCS
-// de server niet blokkeert; de Action-route hierboven is de primaire weg.
+// Directe server-side sync: haalt de letour.fr-fragmenten zelf op (zelfde bron
+// en dezelfde import als de GitHub Action). Draait elke 2 minuten via het
+// interval in index.js; de Action blijft wekker en vangnet.
 export async function runSync() {
   const tick = await syncTick();
   const report = [...tick.report];
 
   for (const p of tick.stages) {
     try {
-      const html = await fetchStagePage(p.nr);
-      report.push(await importStageHtml(p.nr, html));
+      const fragments = await fetchLetourFragments(p.nr, p.type);
+      report.push(await importLetourRankings(p.nr, fragments));
     } catch (e) {
       await note(p.nr, e.message);
       report.push(`etappe ${p.nr}: FOUT — ${e.message}`);

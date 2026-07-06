@@ -43,6 +43,44 @@ export function filterJerseyPlaceholders(rows, isTTT) {
   return rows.filter((r) => r.points !== 0 || (isTTT && r.position === 1));
 }
 
+// --- zelf ophalen (server-side sync) -----------------------------------------
+// Zelfde flow als .github/scripts/letour-fetch.mjs (dat script blijft bewust
+// dependency-vrij): etappepagina → AJAX-URL's per klassement → fragmenten.
+
+const FETCH_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+  'Accept-Language': 'en',
+};
+
+async function fetchText(url) {
+  const res = await fetch(url, { headers: FETCH_HEADERS });
+  if (!res.ok) throw new Error(`letour.fr gaf ${res.status} op ${url}`);
+  return res.text();
+}
+
+// De etappepagina bevat per klassement een AJAX-URL (in data-ajax-stack en
+// data-tabs-ajax, deels HTML-escaped). We pakken per type de eerste.
+export function extractAjaxUrls(pageHtml, stageNr) {
+  const unescaped = pageHtml.replaceAll('&quot;', '"').replaceAll('\\/', '/');
+  const urls = {};
+  const re = new RegExp(`/en/ajax/ranking/${stageNr}/([a-z]{3})/[a-f0-9]+/(?:none|subtab)`, 'g');
+  for (const m of unescaped.matchAll(re)) {
+    if (!(m[1] in urls)) urls[m[1]] = m[0];
+  }
+  return urls;
+}
+
+export async function fetchLetourFragments(stageNr, stageType) {
+  const page = await fetchText(`${LETOUR_BASE}/en/rankings/stage-${stageNr}`);
+  const urls = extractAjaxUrls(page, stageNr);
+  const wanted = [stageType === 'TTT' ? 'ete' : 'ite', 'itg', 'ipg', 'img', 'ijg'];
+  const fragments = {};
+  for (const type of wanted) {
+    if (urls[type]) fragments[type] = await fetchText(`${LETOUR_BASE}${urls[type]}`);
+  }
+  return fragments;
+}
+
 // Ploegenklassementsfragment (ete/etg): positie + ploegnaam.
 export function parseTeamRanking(html) {
   if (!html) return [];
