@@ -1,0 +1,20 @@
+# Houdt de Render free-instantie wakker: pingt elke 5 minuten /healthz zodat de
+# service niet na 15 min inactiviteit in slaap valt (cold start van tientallen
+# seconden voor de eerste bezoeker). Staat los van de uitslagen-sync, zodat een
+# vertraagde sync-cron niet alsnog tot een slaapgat leidt. /healthz doet geen
+# database-werk en heeft geen secret nodig.
+name: Keep-alive
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Snorito wakker
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+        run: curl -fsS --max-time 60 "${APP_URL:-https://snorito-2j6w.onrender.com}/healthz" && echo " — ok"

@@ -30,6 +30,12 @@ app.use(compression());
 // Ruime limiet: de PCS-sync levert complete etappepagina's (±1 MB) aan als JSON.
 app.use(express.json({ limit: '5mb' }));
 
+// Keep-alive-bestemming: een externe pinger (GitHub Action + cron-job.org) raakt
+// deze elke paar minuten aan zodat Render de free-instantie niet in slaap legt
+// (spin-down na 15 min inactiviteit → cold start van tientallen seconden). Geen
+// database, geen werk — puur een levensteken. Staat bewust vóór de SPA-fallback.
+app.get('/healthz', (_req, res) => res.type('text').send('ok'));
+
 // Async-handlerwrapper: onverwachte fouten netjes als 500 i.p.v. hangend request.
 const ah = (fn) => (req, res) => Promise.resolve(fn(req, res)).catch((e) => {
   console.error(e);
