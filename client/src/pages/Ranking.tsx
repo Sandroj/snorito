@@ -31,7 +31,6 @@ function ParticipantDetail({ userId, onBack }: { userId: number; onBack: () => v
   const [data, setData] = useState<Participant | null>(null);
   const [openStage, setOpenStage] = useState<number | null>(null);
   const [detail, setDetail] = useState<StageDetail | null>(null);
-  const [showTeam, setShowTeam] = useState(false);
 
   useEffect(() => {
     api(`/api/participants/${userId}`).then(setData);
@@ -70,14 +69,12 @@ function ParticipantDetail({ userId, onBack }: { userId: number; onBack: () => v
         </div>
       ))}
 
-      <div className="section-label">Team</div>
+      <div className="section-label">Team van {data.team.length} renners</div>
       <div className="card">
-        <div className="acc-head" onClick={() => setShowTeam(!showTeam)}>
-          <b>Team van {data.team.length} renners</b>
-          <span className="muted">{showTeam ? 'verberg' : 'toon'}</span>
-        </div>
-        {showTeam && (
-          <table style={{ marginTop: 10 }}>
+        {data.team.length === 0 ? (
+          <p className="muted" style={{ margin: '4px 2px' }}>Nog geen team samengesteld.</p>
+        ) : (
+          <table>
             <tbody>
               {data.team.map((r) => (
                 <tr key={r.id}>
@@ -96,7 +93,6 @@ function ParticipantDetail({ userId, onBack }: { userId: number; onBack: () => v
             </tbody>
           </table>
         )}
-        {showTeam && data.team.length === 0 && <p className="muted">Nog geen team samengesteld.</p>}
       </div>
     </div>
   );
