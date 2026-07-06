@@ -603,7 +603,8 @@ async function pointsBreakdown(userId, nr) {
   const ids = lineup.map((l) => l.rider_id);
   const ph = ids.map(() => '?').join(',');
   const riderRows = await all(
-    `SELECT r.id, r.name, t.name AS team_name FROM riders r JOIN cycling_teams t ON t.id = r.team_id WHERE r.id IN (${ph})`, ids
+    `SELECT r.id, r.name, r.nationality, r.type, t.name AS team_name, t.shirt_url AS team_shirt
+     FROM riders r JOIN cycling_teams t ON t.id = r.team_id WHERE r.id IN (${ph})`, ids
   );
   const pointRows = await all(
     `SELECT rider_id, category, points FROM rider_points WHERE stage_nr = ? AND rider_id IN (${ph})`, [nr, ...ids]
@@ -622,6 +623,7 @@ async function pointsBreakdown(userId, nr) {
     const stagePts = (pts.stage || 0) * (l.is_captain ? CAPTAIN_FACTOR : 1);
     return {
       riderId: l.rider_id, name: rider?.name ?? '?', team: rider?.team_name ?? '',
+      nationality: rider?.nationality ?? '', type: rider?.type ?? '', teamShirt: rider?.team_shirt ?? null,
       isCaptain: !!l.is_captain,
       stagePoints: stagePts, classPoints: pts.class || 0, teamPoints: pts.team || 0,
       total: stagePts + (pts.class || 0) + (pts.team || 0),
@@ -646,7 +648,7 @@ app.get('/api/participants/:userId', ah(async (req, res) => {
   if (!target) return res.status(404).json({ error: 'Deelnemer niet gevonden' });
 
   const team = await all(`
-    SELECT r.id, r.name, r.price, r.type, t.name AS team_name
+    SELECT r.id, r.name, r.nationality, r.price, r.type, t.name AS team_name, t.shirt_url AS team_shirt
     FROM user_teams ut JOIN riders r ON r.id = ut.rider_id JOIN cycling_teams t ON t.id = r.team_id
     WHERE ut.user_id = ? ORDER BY r.price DESC, r.name
   `, [target.id]);

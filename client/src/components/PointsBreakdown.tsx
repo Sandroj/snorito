@@ -1,7 +1,12 @@
+import { RiderInfo } from './RiderInfo';
+
 export interface BreakdownRow {
   riderId: number;
   name: string;
   team: string;
+  nationality: string;
+  type: string;
+  teamShirt: string | null;
   isCaptain: boolean;
   stagePoints: number;
   classPoints: number;
@@ -30,8 +35,14 @@ export function PointsBreakdown({ rows }: { rows: BreakdownRow[] }) {
         {rows.map((b) => (
           <tr key={b.riderId}>
             <td>
-              {b.name}{b.isCaptain ? ' ★' : ''}
-              <div className="muted" style={{ fontSize: 11 }}>{b.team}</div>
+              <RiderInfo
+                shirt={b.teamShirt}
+                nationality={b.nationality}
+                name={b.name}
+                type={b.type}
+                team={b.team}
+                extra={b.isCaptain ? <span title="Kopman"> ★</span> : null}
+              />
             </td>
             <td className="num">{b.stagePoints}</td>
             <td className="num">{b.classPoints}</td>

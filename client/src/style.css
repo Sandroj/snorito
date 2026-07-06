@@ -415,6 +415,14 @@ tr.me td:first-child { box-shadow: inset 3px 0 0 var(--geel); }
 .addbtn:disabled { opacity: .4; cursor: default; }
 .addbtn:disabled:hover { transform: none; }
 
+/* Compacte rennerweergave in tabellen (klassement: team + puntenuitsplitsing) */
+.rider-cell { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.rider-cell .flag { font-size: 18px; width: 22px; text-align: center; flex-shrink: 0; }
+.rider-cell-info { min-width: 0; }
+.rider-cell-name { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.rider-cell-name .nm { font-weight: 650; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rider-cell-team { font-size: 11px; color: var(--muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
 /* Uitklapbare renner-rij (klik = details, +/- = selecteren) */
 .rider-item { border-bottom: 1px solid #F2F4F7; }
 .rider-item:last-child { border-bottom: none; }

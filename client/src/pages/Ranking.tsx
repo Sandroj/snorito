@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api, euroShort } from '../api';
 import { PointsBreakdown, BreakdownRow } from '../components/PointsBreakdown';
+import { RiderInfo } from '../components/RiderInfo';
 
 interface RankRow {
   position: number;
@@ -14,7 +15,7 @@ interface RankRow {
 
 interface Pool { id: number; name: string; }
 
-interface TeamRider { id: number; name: string; price: number; type: string; team_name: string; }
+interface TeamRider { id: number; name: string; price: number; type: string; team_name: string; nationality: string; team_shirt: string | null; }
 interface Participant {
   userId: number;
   name: string;
@@ -81,10 +82,14 @@ function ParticipantDetail({ userId, onBack }: { userId: number; onBack: () => v
               {data.team.map((r) => (
                 <tr key={r.id}>
                   <td>
-                    {r.name}
-                    <div className="muted" style={{ fontSize: 11 }}>{r.team_name}</div>
+                    <RiderInfo
+                      shirt={r.team_shirt}
+                      nationality={r.nationality}
+                      name={r.name}
+                      type={r.type}
+                      team={r.team_name}
+                    />
                   </td>
-                  <td className="num muted">{r.type}</td>
                   <td className="num">{euroShort(r.price)}</td>
                 </tr>
               ))}
