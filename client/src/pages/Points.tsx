@@ -15,7 +15,12 @@ export default function Points() {
   const [detail, setDetail] = useState<StageDetail | null>(null);
 
   useEffect(() => {
-    api('/api/my/points').then((r) => setScores(r.scores));
+    api('/api/my/points').then((r) => {
+      setScores(r.scores);
+      // Laatste etappe (hoogste nr) meteen uitklappen bij het openen.
+      const last = r.scores.filter((s: StageScore) => s.stageNr > 0).sort((a: StageScore, b: StageScore) => b.stageNr - a.stageNr)[0];
+      if (last) setOpenStage(last.stageNr);
+    });
   }, []);
 
   useEffect(() => {
