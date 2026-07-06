@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api, euroShort } from '../api';
-import { PointsBreakdown, BreakdownRow } from '../components/PointsBreakdown';
 import { RiderInfo } from '../components/RiderInfo';
+import { Daguitslag, StageDetail } from '../components/Daguitslag';
 
 interface RankRow {
   position: number;
@@ -30,7 +30,7 @@ interface Participant {
 function ParticipantDetail({ userId, onBack }: { userId: number; onBack: () => void }) {
   const [data, setData] = useState<Participant | null>(null);
   const [openStage, setOpenStage] = useState<number | null>(null);
-  const [breakdown, setBreakdown] = useState<BreakdownRow[]>([]);
+  const [detail, setDetail] = useState<StageDetail | null>(null);
   const [showTeam, setShowTeam] = useState(false);
 
   useEffect(() => {
@@ -39,8 +39,8 @@ function ParticipantDetail({ userId, onBack }: { userId: number; onBack: () => v
 
   useEffect(() => {
     if (openStage == null) return;
-    setBreakdown([]);
-    api(`/api/participants/${userId}/points/${openStage}`).then((r) => setBreakdown(r.breakdown));
+    setDetail(null);
+    api(`/api/participants/${userId}/points/${openStage}`).then(setDetail);
   }, [userId, openStage]);
 
   if (!data) return <div className="center" style={{ margin: 40, color: '#667085' }}>Laden…</div>;
@@ -66,7 +66,7 @@ function ParticipantDetail({ userId, onBack }: { userId: number; onBack: () => v
             <b>{label(s.stageNr)}</b>
             <span className="pts">{s.points} pt</span>
           </div>
-          {openStage === s.stageNr && <PointsBreakdown rows={breakdown} />}
+          {openStage === s.stageNr && (detail ? <Daguitslag d={detail} /> : <div className="muted" style={{ margin: '10px 2px' }}>Laden…</div>)}
         </div>
       ))}
 

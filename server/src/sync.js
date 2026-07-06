@@ -193,9 +193,20 @@ function payloadFromLetour(stage, fragments, riders, teams) {
     if (unmatched.length) throw new Error(`Onbekende ploegnamen van letour.fr: ${unmatched.join(', ')}`);
     payload.tttPositions = rows.map((r, i) => ({ position: r.position, teamId: matched.get(names[i]).id }));
   } else {
-    const rows = parseRiderRanking(fragments.ite).slice(0, TOP_STAGE);
-    if (rows.length < TOP_STAGE) return null;
-    payload.positions = rows.map((r) => ({ position: r.position, riderId: riderId(r, 'daguitslag') }));
+    const rows = parseRiderRanking(fragments.ite);
+    if (rows.length < TOP_STAGE) return null; // wacht tot de uitslag (top 20) compleet is
+    // Volledige finishvolgorde bewaren, zodat ook de positie van renners buiten
+    // de top 20 zichtbaar is. De top 20 telt voor de punten en moet exact
+    // matchen; daaronder slaan we onbekende rugnummers (renners buiten onze
+    // poule) over i.p.v. de hele import te laten falen.
+    payload.positions = rows.map((r) => {
+      const rider = byBib.get(r.bib);
+      if (!rider) {
+        if (r.position <= TOP_STAGE) throw new Error(`Onbekend rugnummer van letour.fr (daguitslag): #${r.bib}`);
+        return null;
+      }
+      return { position: r.position, riderId: rider.id };
+    }).filter(Boolean);
   }
 
   // Algemeen klassement moet er zijn; punt/berg/jong kunnen vroeg in de Tour nog (bijna) leeg zijn.
