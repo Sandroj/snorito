@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type MouseEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { api, euro, euroShort, flag, Rider, CyclingTeam, QUALITIES, typeChipClass } from '../api';
+import { api, cachedApi, euro, euroShort, flag, Rider, CyclingTeam, QUALITIES, typeChipClass } from '../api';
 import { PlusIcon, MinusIcon } from '../components/Icons';
 import { QualityDots, QualityTag, Shirt } from '../components/Quality';
 import { useSession } from '../App';
@@ -27,7 +27,7 @@ export default function Team() {
   const { refresh } = useSession();
 
   useEffect(() => {
-    Promise.all([api('/api/riders'), api('/api/team'), api('/api/teams')]).then(([r, t, tm]) => {
+    Promise.all([cachedApi('/api/riders'), api('/api/team'), cachedApi('/api/teams')]).then(([r, t, tm]) => {
       setRiders(r.riders);
       setBudget(r.budget);
       setSelected(new Set(t.riderIds));

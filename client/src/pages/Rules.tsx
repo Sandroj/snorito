@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { api, euro, Rules as RulesData } from '../api';
+import { cachedApi, euro, Rules as RulesData } from '../api';
 
 const CLS_META: Record<string, { label: string; trui: string }> = {
   alg: { label: 'Algemeen', trui: 'trui-geel' },
@@ -34,7 +34,7 @@ export default function Rules() {
   const [rules, setRules] = useState<RulesData | null>(null);
 
   useEffect(() => {
-    api<RulesData>('/api/rules').then(setRules);
+    cachedApi<RulesData>('/api/rules').then(setRules);
   }, []);
 
   if (!rules) return <div className="center" style={{ marginTop: 60, color: '#667085' }}>Laden…</div>;

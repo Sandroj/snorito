@@ -3,6 +3,7 @@
 // Etappes met result_source='manual' worden nooit aangeraakt.
 import { get, all, run, tx } from './db.js';
 import { processStage } from './points.js';
+import { bustCache } from './cache.js';
 import { fetchStagePage, parseStagePage, parseTttResults, matchByName, matchTeamsByName } from './pcs.js';
 import { parseRiderRanking, parseTeamRanking, filterJerseyPlaceholders, TEAM_ALIASES } from './letour.js';
 
@@ -47,6 +48,7 @@ export async function saveStageResult(nr, { positions = [], tttPositions = [], c
 
     await h.run('UPDATE stages SET result_source = ? WHERE nr = ?', [source, nr]);
   });
+  bustCache(); // uitslag of etappestatus gewijzigd → gecachte basisdata verversen
 }
 
 async function note(stageNr, error) {

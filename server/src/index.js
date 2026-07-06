@@ -1,4 +1,5 @@
 import express from 'express';
+import compression from 'compression';
 import crypto from 'node:crypto';
 import path from 'node:path';
 import fs from 'node:fs';
@@ -15,6 +16,8 @@ import { ensureSeeded } from './seed.js';
 import { runSync, syncTick, importStageHtml, importLetourRankings, noteSyncError, saveStageResult } from './sync.js';
 import { sendPasswordResetMail } from './mail.js';
 import { rateLimit } from './ratelimit.js';
+import { cached, bustCache } from './cache.js';
+import { checkLineupReminders } from './reminders.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -23,6 +26,7 @@ await ensureSeeded();
 
 const app = express();
 app.set('trust proxy', 1);
+app.use(compression());
 // Ruime limiet: de PCS-sync levert complete etappepagina's (±1 MB) aan als JSON.
 app.use(express.json({ limit: '5mb' }));
 
@@ -352,29 +356,31 @@ app.get('/api/me', ah(async (req, res) => {
 
 // --- basisdata --------------------------------------------------------------
 
+// Basisdata is voor iedereen gelijk en verandert alleen bij imports of
+// admin-wijzigingen — servercache (zie cache.js) scheelt Neon-roundtrips.
 app.get('/api/riders', ah(async (_req, res) => {
-  const riders = (await all(`
+  const riders = await cached('riders', 30_000, async () => (await all(`
     SELECT r.*, t.name AS team_name, t.abbreviation AS team_abbr, t.shirt_url AS team_shirt
     FROM riders r JOIN cycling_teams t ON t.id = r.team_id
     ORDER BY r.price DESC, r.name
-  `)).map((r) => ({ ...r, qualities: JSON.parse(r.qualities) }));
+  `)).map((r) => ({ ...r, qualities: JSON.parse(r.qualities) })));
   res.json({ riders, budget: BUDGET, teamSize: TEAM_SIZE, maxPerTeam: MAX_PER_CYCLING_TEAM });
 }));
 
 app.get('/api/teams', ah(async (_req, res) => {
-  const teams = await all(`
+  const teams = await cached('teams', 30_000, () => all(`
     SELECT t.id, t.name, t.abbreviation AS abbr, t.shirt_url AS shirt,
       COUNT(r.id) AS rider_count,
       MIN(r.price) AS min_price
     FROM cycling_teams t LEFT JOIN riders r ON r.team_id = t.id
     GROUP BY t.id
     ORDER BY t.name
-  `);
+  `));
   res.json({ teams });
 }));
 
 app.get('/api/stages', ah(async (_req, res) => {
-  res.json({ stages: await all('SELECT * FROM stages ORDER BY nr') });
+  res.json({ stages: await cached('stages', 15_000, () => all('SELECT * FROM stages ORDER BY nr')) });
 }));
 
 // Spelregels en puntentabellen — rechtstreeks uit de puntenmotor (server/src/points.js),
@@ -579,31 +585,85 @@ app.get('/api/my/points', ah(async (req, res) => {
   res.json({ scores: scores.map((s) => ({ stageNr: s.stage_nr, points: s.points })) });
 }));
 
+// Puntenuitsplitsing van één deelnemer voor één etappe (nr 0 = eindklassement).
+// Set-based: 2 query's in plaats van 2 per opgestelde renner.
+async function pointsBreakdown(userId, nr) {
+  const isFinal = nr === 0;
+  const lineup = isFinal
+    ? await all('SELECT rider_id, 0 AS is_captain FROM user_teams WHERE user_id = ?', [userId])
+    : await all('SELECT rider_id, is_captain FROM lineups WHERE user_id = ? AND stage_nr = ?', [userId, nr]);
+  if (!lineup.length) return { stageNr: nr, breakdown: [], total: 0 };
+
+  const ids = lineup.map((l) => l.rider_id);
+  const ph = ids.map(() => '?').join(',');
+  const riderRows = await all(
+    `SELECT r.id, r.name, t.name AS team_name FROM riders r JOIN cycling_teams t ON t.id = r.team_id WHERE r.id IN (${ph})`, ids
+  );
+  const pointRows = await all(
+    `SELECT rider_id, category, points FROM rider_points WHERE stage_nr = ? AND rider_id IN (${ph})`, [nr, ...ids]
+  );
+  const riderById = new Map(riderRows.map((r) => [r.id, r]));
+  const ptsByRider = new Map();
+  for (const p of pointRows) {
+    const cur = ptsByRider.get(p.rider_id) || {};
+    cur[p.category] = p.points;
+    ptsByRider.set(p.rider_id, cur);
+  }
+
+  const breakdown = lineup.map((l) => {
+    const rider = riderById.get(l.rider_id);
+    const pts = ptsByRider.get(l.rider_id) || {};
+    const stagePts = (pts.stage || 0) * (l.is_captain ? CAPTAIN_FACTOR : 1);
+    return {
+      riderId: l.rider_id, name: rider?.name ?? '?', team: rider?.team_name ?? '',
+      isCaptain: !!l.is_captain,
+      stagePoints: stagePts, classPoints: pts.class || 0, teamPoints: pts.team || 0,
+      total: stagePts + (pts.class || 0) + (pts.team || 0),
+    };
+  }).sort((a, b) => b.total - a.total);
+
+  return { stageNr: nr, breakdown, total: breakdown.reduce((s, b) => s + b.total, 0) };
+}
+
 app.get('/api/my/points/:nr', ah(async (req, res) => {
   const user = await requireUser(req, res); if (!user) return;
+  res.json(await pointsBreakdown(user.id, Number(req.params.nr)));
+}));
+
+// --- deelnemers (voor het klassement: teams en scores van anderen inzien) ----
+
+// Opstellingen van open etappes blijven geheim (niet afkijken vóór de start);
+// het team van 20 ligt na de Tourstart toch vast en is dus zichtbaar.
+app.get('/api/participants/:userId', ah(async (req, res) => {
+  const user = await requireUser(req, res); if (!user) return;
+  const target = await get('SELECT id, name FROM users WHERE id = ?', [Number(req.params.userId)]);
+  if (!target) return res.status(404).json({ error: 'Deelnemer niet gevonden' });
+
+  const team = await all(`
+    SELECT r.id, r.name, r.price, r.type, t.name AS team_name
+    FROM user_teams ut JOIN riders r ON r.id = ut.rider_id JOIN cycling_teams t ON t.id = r.team_id
+    WHERE ut.user_id = ? ORDER BY r.price DESC, r.name
+  `, [target.id]);
+  const scores = await all('SELECT stage_nr, points FROM user_scores WHERE user_id = ? ORDER BY stage_nr', [target.id]);
+
+  res.json({
+    userId: target.id,
+    name: target.name,
+    team,
+    scores: scores.map((s) => ({ stageNr: s.stage_nr, points: s.points })),
+    total: scores.reduce((s, x) => s + x.points, 0),
+  });
+}));
+
+app.get('/api/participants/:userId/points/:nr', ah(async (req, res) => {
+  const user = await requireUser(req, res); if (!user) return;
   const nr = Number(req.params.nr);
-  const isFinal = nr === 0;
-
-  const lineup = isFinal
-    ? await all('SELECT rider_id, 0 AS is_captain FROM user_teams WHERE user_id = ?', [user.id])
-    : await all('SELECT rider_id, is_captain FROM lineups WHERE user_id = ? AND stage_nr = ?', [user.id, nr]);
-
-  const breakdown = [];
-  for (const l of lineup) {
-    const rider = await get('SELECT r.*, t.name AS team_name FROM riders r JOIN cycling_teams t ON t.id = r.team_id WHERE r.id = ?', [l.rider_id]);
-    const pts = await all('SELECT category, points FROM rider_points WHERE stage_nr = ? AND rider_id = ?', [nr, l.rider_id]);
-    const getPts = (cat) => pts.find((p) => p.category === cat)?.points || 0;
-    const stagePts = getPts('stage') * (l.is_captain ? 2 : 1);
-    breakdown.push({
-      riderId: rider.id, name: rider.name, team: rider.team_name,
-      isCaptain: !!l.is_captain,
-      stagePoints: stagePts, classPoints: getPts('class'), teamPoints: getPts('team'),
-      total: stagePts + getPts('class') + getPts('team'),
-    });
+  if (nr !== 0) {
+    const stage = await get('SELECT status FROM stages WHERE nr = ?', [nr]);
+    if (!stage) return res.status(404).json({ error: 'Etappe niet gevonden' });
+    if (stage.status === 'open') return res.status(403).json({ error: 'Deze etappe is nog niet gestart' });
   }
-  breakdown.sort((a, b) => b.total - a.total);
-
-  res.json({ stageNr: nr, breakdown, total: breakdown.reduce((s, b) => s + b.total, 0) });
+  res.json(await pointsBreakdown(Number(req.params.userId), nr));
 }));
 
 // --- admin ------------------------------------------------------------------
@@ -633,6 +693,7 @@ app.put('/api/admin/stage/:nr/status', ah(async (req, res) => {
   const { status } = req.body || {};
   if (!['open', 'started', 'finished'].includes(status)) return res.status(400).json({ error: 'Ongeldige status' });
   await run('UPDATE stages SET status = ? WHERE nr = ?', [status, Number(req.params.nr)]);
+  bustCache();
   res.json({ ok: true });
 }));
 
@@ -669,6 +730,7 @@ app.put('/api/admin/stage/:nr/source', ah(async (req, res) => {
   const { source } = req.body || {};
   if (!['auto', 'manual'].includes(source)) return res.status(400).json({ error: 'Ongeldige bron' });
   await run('UPDATE stages SET result_source = ? WHERE nr = ?', [source, Number(req.params.nr)]);
+  bustCache();
   res.json({ ok: true });
 }));
 
@@ -718,6 +780,7 @@ app.put('/api/admin/rider/:id/withdrawn', ah(async (req, res) => {
   const user = await requireAdmin(req, res); if (!user) return;
   const lastStartedStage = req.body?.lastStartedStage ?? null;
   await run('UPDATE riders SET last_started_stage = ? WHERE id = ?', [lastStartedStage, Number(req.params.id)]);
+  bustCache();
   res.json({ ok: true });
 }));
 
@@ -759,6 +822,7 @@ app.get('/api/cron/pcs-pending', ah(async (req, res) => {
   if (!cronAuthorized(req, res)) return;
   const result = await syncTick();
   if (result.report.length) console.log('PCS-sync:', result.report.join(' | '));
+  await checkLineupReminders().catch((e) => console.error('herinneringen:', e.message));
   res.json(result);
 }));
 
@@ -794,11 +858,9 @@ app.post('/api/cron/letour-html', ah(async (req, res) => {
   res.json({ ok: true, report });
 }));
 
-// Volledige data-export voor back-ups (dagelijkse GitHub Action bewaart dit als
-// artifact). Genoeg om teams, opstellingen en punten in retrospect na te rekenen.
+// Volledige data-export: alle scores, teams en opstellingen van alle deelnemers.
 // Wachtwoord-hashes blijven bewust buiten de export.
-app.get('/api/cron/backup', ah(async (req, res) => {
-  if (!cronAuthorized(req, res)) return;
+async function fullExport() {
   const dump = { at: new Date().toISOString() };
   dump.users = await all('SELECT id, name, email, is_admin, created_at, last_login_at FROM users');
   for (const t of [
@@ -808,7 +870,20 @@ app.get('/api/cron/backup', ah(async (req, res) => {
   ]) {
     dump[t] = await all(`SELECT * FROM ${t}`);
   }
-  res.json(dump);
+  return dump;
+}
+
+// Voor back-ups (GitHub Action bewaart dit elke 6 uur als artifact).
+app.get('/api/cron/backup', ah(async (req, res) => {
+  if (!cronAuthorized(req, res)) return;
+  res.json(await fullExport());
+}));
+
+// Zelfde export, maar als download voor de beheerder (knop in het adminpaneel).
+app.get('/api/admin/export', ah(async (req, res) => {
+  const user = await requireAdmin(req, res); if (!user) return;
+  res.setHeader('Content-Disposition', `attachment; filename="snorito-export-${new Date().toISOString().slice(0, 10)}.json"`);
+  res.json(await fullExport());
 }));
 
 // Fallback: server-side fetch (werkt alleen als PCS de server niet blokkeert).
@@ -824,10 +899,47 @@ app.post('/api/cron/pcs-sync', ah(async (req, res) => {
 // (client/dist), zodat alles op één poort/URL draait. In dev gebruik je Vite (:5173).
 const distDir = path.join(__dirname, '..', '..', 'client', 'dist');
 if (fs.existsSync(distDir)) {
-  app.use(express.static(distDir));
+  // Vite-assets hebben een hash in de bestandsnaam en mogen dus eeuwig gecachet
+  // worden; index.html juist niet (die wijst naar de nieuwste assets).
+  app.use(express.static(distDir, {
+    index: false,
+    setHeaders: (res, filePath) => {
+      if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      }
+    },
+  }));
   // SPA-fallback: alle niet-/api routes naar index.html (client-side routing)
-  app.get(/^\/(?!api\/).*/, (_req, res) => res.sendFile(path.join(distDir, 'index.html')));
+  app.get(/^\/(?!api\/).*/, (_req, res) => {
+    res.setHeader('Cache-Control', 'no-cache');
+    res.sendFile(path.join(distDir, 'index.html'));
+  });
 }
+
+// --- achtergrondtaken ---------------------------------------------------------
+// Eigen sync-interval naast de GitHub Action: de Action (elke 10 min, vaak met
+// vertraging) blijft de wekker die Render wakker houdt, maar zolang de server
+// draait halen we uitslagen elke 2 minuten zelf bij letour.fr — zo staan punten
+// kort na de finish in de app in plaats van na een half uur. runSync is een
+// no-op wanneer geen enkele etappe een uitslag nodig heeft.
+let syncBusy = false;
+setInterval(async () => {
+  if (syncBusy) return;
+  syncBusy = true;
+  try {
+    const result = await runSync();
+    const acted = result.report.filter((r) => !r.includes('nog niet compleet') && !r.includes('ongewijzigd'));
+    if (acted.length) {
+      console.log('interval-sync:', acted.join(' | '));
+      bustCache();
+    }
+    await checkLineupReminders();
+  } catch (e) {
+    console.error('interval-sync:', e.message);
+  } finally {
+    syncBusy = false;
+  }
+}, 2 * 60_000);
 
 // -----------------------------------------------------------------------------
 

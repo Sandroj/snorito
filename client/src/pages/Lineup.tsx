@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api, flag, fmtDate, fmtTime, Rider, Stage, terrainLabel, typeChipClass } from '../api';
+import { api, cachedApi, flag, fmtDate, fmtTime, Rider, Stage, terrainLabel, typeChipClass } from '../api';
 import { ClockIcon, MountainIcon } from '../components/Icons';
 import { Shirt } from '../components/Quality';
 
@@ -50,7 +50,7 @@ export default function Lineup() {
   const [msg, setMsg] = useState<{ kind: 'error' | 'success'; text: string } | null>(null);
 
   useEffect(() => {
-    Promise.all([api('/api/stages'), api('/api/riders'), api('/api/team')]).then(([s, r, t]) => {
+    Promise.all([cachedApi('/api/stages', 60_000), cachedApi('/api/riders'), api('/api/team')]).then(([s, r, t]) => {
       setStages(s.stages);
       setRiders(r.riders);
       setTeamIds(t.riderIds);

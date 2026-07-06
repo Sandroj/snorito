@@ -206,6 +206,13 @@ CREATE TABLE IF NOT EXISTS pool_members (
   PRIMARY KEY (pool_id, user_id)
 );
 
+CREATE TABLE IF NOT EXISTS lineup_reminders (
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  stage_nr INTEGER NOT NULL,
+  sent_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (user_id, stage_nr)
+);
+
 CREATE TABLE IF NOT EXISTS config (
   key TEXT PRIMARY KEY,
   value TEXT

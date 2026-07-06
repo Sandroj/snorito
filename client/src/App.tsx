@@ -65,7 +65,9 @@ export default function App() {
         <span className="blob3" />
       </div>
       <header className="topbar">
-        <Logo />
+        <NavLink to="/opstelling" style={{ textDecoration: 'none' }} aria-label="Naar opstelling">
+          <Logo />
+        </NavLink>
         <div className="top-actions">
           <NavLink to="/regels" className={({ isActive }) => `iconbtn${isActive ? ' active' : ''}`} title="Spelregels" aria-label="Spelregels">
             <BookIcon />

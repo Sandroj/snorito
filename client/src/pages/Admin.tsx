@@ -177,6 +177,11 @@ export default function Admin() {
     <div className="fade-in">
       <h1>Beheer</h1>
       <p className="page-sub">Etappes beheren, uitslagen invoeren en verwerken.</p>
+      <p style={{ marginTop: -6 }}>
+        <a className="btn btn-ghost btn-sm" href="/api/admin/export" download>
+          Download volledige export (scores, teams, opstellingen)
+        </a>
+      </p>
       {msg && <div className={msg.kind}>{msg.text}</div>}
 
       <datalist id="rider-list">

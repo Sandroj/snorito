@@ -72,6 +72,31 @@ export async function api<T = any>(path: string, options?: RequestInit & { json?
   return data as T;
 }
 
+// Cache voor basisdata (renners, ploegen, etappes, regels): gelijk voor
+// iedereen en vrijwel statisch tijdens een sessie. Zo is wisselen tussen
+// tabbladen direct in plaats van telkens wachten op de (trage) server.
+const memCache = new Map<string, { at: number; data: any }>();
+
+export async function cachedApi<T = any>(path: string, ttlMs = 5 * 60_000): Promise<T> {
+  const now = Date.now();
+  const hit = memCache.get(path);
+  if (hit && now - hit.at < ttlMs) return hit.data as T;
+  try {
+    const raw = sessionStorage.getItem(`api:${path}`);
+    if (raw) {
+      const stored = JSON.parse(raw);
+      if (now - stored.at < ttlMs) {
+        memCache.set(path, stored);
+        return stored.data as T;
+      }
+    }
+  } catch { /* sessionStorage niet beschikbaar of corrupt — gewoon fetchen */ }
+  const data = await api<T>(path);
+  memCache.set(path, { at: now, data });
+  try { sessionStorage.setItem(`api:${path}`, JSON.stringify({ at: now, data })); } catch { /* vol/geblokkeerd */ }
+  return data;
+}
+
 export const euro = (n: number) => '€ ' + n.toLocaleString('nl-NL');
 
 export const euroShort = (n: number) =>

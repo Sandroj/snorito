@@ -1,19 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api';
+import { PointsBreakdown, BreakdownRow } from '../components/PointsBreakdown';
 
 interface StageScore { stageNr: number; points: number; }
-
-interface BreakdownRow {
-  riderId: number;
-  name: string;
-  team: string;
-  isCaptain: boolean;
-  stagePoints: number;
-  classPoints: number;
-  teamPoints: number;
-  total: number;
-}
 
 export default function Points() {
   const [scores, setScores] = useState<StageScore[]>([]);
@@ -57,33 +47,7 @@ export default function Points() {
             <b>{label(s.stageNr)}</b>
             <span className="pts">{s.points} pt</span>
           </div>
-          {openStage === s.stageNr && (
-            <table style={{ marginTop: 10 }}>
-              <thead>
-                <tr>
-                  <th>Renner</th>
-                  <th className="num">Rit</th>
-                  <th className="num">Klass.</th>
-                  <th className="num">Team</th>
-                  <th className="num">Totaal</th>
-                </tr>
-              </thead>
-              <tbody>
-                {breakdown.map((b) => (
-                  <tr key={b.riderId}>
-                    <td>
-                      {b.name}{b.isCaptain ? ' ★' : ''}
-                      <div className="muted" style={{ fontSize: 11 }}>{b.team}</div>
-                    </td>
-                    <td className="num">{b.stagePoints}</td>
-                    <td className="num">{b.classPoints}</td>
-                    <td className="num">{b.teamPoints}</td>
-                    <td className="num"><b>{b.total}</b></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+          {openStage === s.stageNr && <PointsBreakdown rows={breakdown} />}
         </div>
       ))}
     </div>
