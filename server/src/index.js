@@ -1072,6 +1072,10 @@ if (fs.existsSync(distDir)) {
     setHeaders: (res, filePath) => {
       if (filePath.includes(`${path.sep}assets${path.sep}`)) {
         res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      } else if (/(?:sw\.js|workbox-[^/]+\.js|manifest\.webmanifest)$/.test(filePath)) {
+        // Service worker + manifest nooit hard cachen, anders blijft een oude
+        // versie hangen en komt een nieuwe deploy niet door.
+        res.setHeader('Cache-Control', 'no-cache');
       }
     },
   }));
