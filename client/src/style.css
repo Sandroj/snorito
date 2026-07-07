@@ -449,18 +449,25 @@ table.daguitslag tr.swap-in { background: #F0FDF4; }
 .daguitslag-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 16px 2px 6px; }
 .daguitslag-label .legend { font-weight: 500; text-transform: none; letter-spacing: 0; margin-left: 8px; color: var(--muted); }
 
-/* Mobiel: bij table-layout:auto liet de browser de tabel uitdijen om de lange
-   rennernaam te tonen (overflow buiten beeld). Met table-layout:fixed + vaste
-   smalle kolommen krijgt de naam de restruimte en kapt hij netjes af (ellipsis).
-   Zelfde tabel wordt gebruikt in Klassement én Uitslagen, dus dit dekt beide. */
+/* Op desktop tonen we de losse Rit/Klass/Team-kolommen; het mobiele regeltje is
+   dan verborgen. */
+.daguitslag .mobile-breakdown { display: none; }
+
+/* Mobiel: een 6-koloms tabel wordt op een telefoon nooit leesbaar. We verbergen
+   de detailkolommen (Rit/Klass/Team) en tonen ze als klein regeltje onder de
+   naam; over blijven #, Renner en Tot. Met table-layout:fixed krijgt de naam de
+   restruimte en kapt hij netjes af. Zelfde tabel in Klassement én Uitslagen. */
 @media (max-width: 480px) {
-  table.daguitslag { table-layout: fixed; width: 100%; font-size: 13px; }
-  table.daguitslag th, table.daguitslag td { padding: 8px 3px; }
-  table.daguitslag th { font-size: 9px; letter-spacing: 0; }
-  table.daguitslag td.num, table.daguitslag th.num { width: 32px; padding-left: 2px; padding-right: 2px; white-space: nowrap; }
-  table.daguitslag td.pos, table.daguitslag th.pos-h { width: 18px; }
-  table.daguitslag .rider-cell { gap: 7px; }
-  table.daguitslag .rider-cell .flag { font-size: 16px; width: 18px; flex-shrink: 0; }
+  table.daguitslag { table-layout: fixed; width: 100%; font-size: 13.5px; }
+  table.daguitslag th, table.daguitslag td { padding: 9px 4px; }
+  table.daguitslag .col-detail { display: none; }
+  table.daguitslag td.pos, table.daguitslag th.pos-h { width: 22px; }
+  table.daguitslag td.num, table.daguitslag th.num { width: 48px; white-space: nowrap; }
+  table.daguitslag .rider-cell { gap: 8px; }
+  table.daguitslag .mobile-breakdown {
+    display: block; font-size: 11px; color: var(--muted); margin-top: 3px;
+    font-variant-numeric: tabular-nums;
+  }
   .daguitslag-label .legend { display: block; margin-left: 0; margin-top: 2px; }
 }
 

@@ -41,9 +41,9 @@ function PointTable({ rows, empty }: { rows: PointRow[]; empty: string }) {
         <tr>
           <th className="pos-h">#</th>
           <th>Renner</th>
-          <th className="num">Rit</th>
-          <th className="num">Klass.</th>
-          <th className="num">Team</th>
+          <th className="num col-detail">Rit</th>
+          <th className="num col-detail">Klass.</th>
+          <th className="num col-detail">Team</th>
           <th className="num">Tot.</th>
         </tr>
       </thead>
@@ -53,10 +53,12 @@ function PointTable({ rows, empty }: { rows: PointRow[]; empty: string }) {
             <td className="pos">{posLabel(r.position)}</td>
             <td>
               <RiderInfo shirt={r.teamShirt} nationality={r.nationality} name={r.name} team={r.team} extra={captainChip(r.isCaptain)} />
+              {/* Op mobiel vervangt dit regeltje de aparte Rit/Klass/Team-kolommen. */}
+              <div className="mobile-breakdown">Rit {r.stagePoints} · Klas {r.classPoints} · Team {r.teamPoints}</div>
             </td>
-            <td className="num">{r.stagePoints}</td>
-            <td className="num">{r.classPoints}</td>
-            <td className="num">{r.teamPoints}</td>
+            <td className="num col-detail">{r.stagePoints}</td>
+            <td className="num col-detail">{r.classPoints}</td>
+            <td className="num col-detail">{r.teamPoints}</td>
             <td className="num"><b>{r.total}</b></td>
           </tr>
         ))}
