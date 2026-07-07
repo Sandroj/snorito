@@ -27,6 +27,18 @@ await ensureSeeded();
 const app = express();
 app.set('trust proxy', 1);
 app.use(compression());
+
+// Basis-security-headers: niet in frames laden (clickjacking), geen MIME-sniffing,
+// geen referrer naar externe sites, en in productie HTTPS afdwingen (HSTS).
+// Bewust geen Content-Security-Policy: die kan de Vite/PWA-bundel breken en
+// vergt apart testwerk — niet doen tijdens een lopende Tour.
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'same-origin');
+  if (isProduction()) res.setHeader('Strict-Transport-Security', 'max-age=31536000');
+  next();
+});
 // Ruime limiet: de PCS-sync levert complete etappepagina's (±1 MB) aan als JSON.
 app.use(express.json({ limit: '5mb' }));
 
@@ -268,6 +280,9 @@ app.get('/api/auth/google/callback', ah(async (req, res) => {
 }));
 
 app.post('/api/auth/register', ah(async (req, res) => {
+  if (!rateLimit(`register:${req.ip}`, 10, 60 * 60_000)) {
+    return res.status(429).json({ error: 'Te veel registraties vanaf dit adres — probeer het later opnieuw' });
+  }
   const { name, email, password } = req.body || {};
   if (!name || !email || !password) return res.status(400).json({ error: 'Naam, e-mail en wachtwoord zijn verplicht' });
   if (await get('SELECT 1 FROM users WHERE email = ?', [email])) {

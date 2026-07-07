@@ -18,4 +18,7 @@ services:
       # staan als env-vars: DATABASE_URL (Neon), GOOGLE_CLIENT_ID/SECRET,
       # BREVO_API_KEY + MAIL_FROM (wachtwoord-reset-mails) en CRON_SECRET
       # (zelfde waarde als het GitHub-secret voor .github/workflows/pcs-sync.yml).
+      # Optioneel: ADMIN_PASSWORD — zodra gezet neemt admin@snorito.app bij de
+      # eerstvolgende herstart dat wachtwoord over (het seed-wachtwoord staat
+      # in deze publieke repo). Zie syncAdminPassword in server/src/seed.js.
       # De database wordt automatisch geseed bij de eerste (lege) boot.

@@ -3,7 +3,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import {
-  get, tx, initSchema, pool,
+  get, run, tx, initSchema, pool,
   BUDGET, TEAM_SIZE, MAX_PER_CYCLING_TEAM, MIN_RIDER_PRICE, LINEUP_SIZE,
 } from './db.js';
 
@@ -140,6 +140,25 @@ export async function ensureSeeded() {
     console.log('Lege database gevonden — seed wordt uitgevoerd…');
     await runSeed({ quiet: true });
   }
+  await syncAdminPassword();
+}
+
+// Opt-in beveiliging: het seed-adminaccount (admin@snorito.app) staat met zijn
+// standaardwachtwoord in deze publieke repo. Zet in Render de env-var
+// ADMIN_PASSWORD en bij de eerstvolgende (her)start neemt het account dat
+// wachtwoord over. Zonder env-var verandert er niets — bewuste keuze van Max
+// (7 juli 2026), het mechanisme staat klaar voor als hij het gat wil dichten.
+async function syncAdminPassword() {
+  const wanted = process.env.ADMIN_PASSWORD;
+  if (!wanted) return;
+  const admin = await get('SELECT * FROM users WHERE email = ?', ['admin@snorito.app']);
+  if (!admin) return;
+  const hash = (password, salt) => crypto.scryptSync(password, salt, 32).toString('hex');
+  if (hash(wanted, admin.salt) === admin.pass_hash) return; // al in sync
+  const salt = crypto.randomBytes(16).toString('hex');
+  await run('UPDATE users SET pass_hash = ?, salt = ? WHERE id = ?', [hash(wanted, salt), salt, admin.id]);
+  await run('DELETE FROM sessions WHERE user_id = ?', [admin.id]); // oude (mogelijk vreemde) sessies eruit
+  console.log('Adminwachtwoord overgenomen uit ADMIN_PASSWORD; bestaande adminsessies zijn uitgelogd.');
 }
 
 // Direct uitgevoerd (npm run seed): altijd opnieuw seeden.
