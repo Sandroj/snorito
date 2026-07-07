@@ -1112,7 +1112,9 @@ setInterval(async () => {
   if (syncBusy) return;
   syncBusy = true;
   try {
-    const result = await runSync();
+    // Alleen lopende etappes in de snelle loop; rechecks van afgeronde etappes
+    // doet de 10-minuten-Action (zie runSync-commentaar) — scheelt CPU-pieken.
+    const result = await runSync({ fastOnly: true });
     const acted = result.report.filter((r) => !r.includes('nog niet compleet') && !r.includes('ongewijzigd'));
     if (acted.length) {
       console.log('interval-sync:', acted.join(' | '));

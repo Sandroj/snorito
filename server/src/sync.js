@@ -140,7 +140,7 @@ export async function syncTick() {
       s.status === 'started' ||
       (s.status === 'finished' && s.result_source === 'auto' && now - startMs(s) < RECHECK_MS)
     );
-    if (wantsImport) pending.push({ nr: s.nr, type: s.type });
+    if (wantsImport) pending.push({ nr: s.nr, type: s.type, status: s.status });
   }
 
   return { at: new Date().toISOString(), report, stages: pending };
@@ -273,11 +273,18 @@ export async function noteSyncError(stageNr, message) {
 // Directe server-side sync: haalt de letour.fr-fragmenten zelf op (zelfde bron
 // en dezelfde import als de GitHub Action). Draait elke 2 minuten via het
 // interval in index.js; de Action blijft wekker en vangnet.
-export async function runSync() {
+//
+// fastOnly (in-process loop): alleen etappes die nú lopen ('started') krijgen de
+// snelle 2-minuten-behandeling. Het herchecken van al afgeronde etappes (tot 48u
+// na de start) is veel minder tijdkritisch en zou anders elke 2 minuten een
+// zware fetch+parse per afgelopen etappe opstapelen; dat laten we over aan de
+// 10-minuten GitHub Action. Zonder fastOnly (cron-route) blijft alles meelopen.
+export async function runSync({ fastOnly = false } = {}) {
   const tick = await syncTick();
   const report = [...tick.report];
+  const stages = fastOnly ? tick.stages.filter((s) => s.status === 'started') : tick.stages;
 
-  for (const p of tick.stages) {
+  for (const p of stages) {
     try {
       const fragments = await fetchLetourFragments(p.nr, p.type);
       report.push(await importLetourRankings(p.nr, fragments));

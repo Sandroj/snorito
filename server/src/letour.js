@@ -70,15 +70,40 @@ export function extractAjaxUrls(pageHtml, stageNr) {
   return urls;
 }
 
+// De AJAX-URL's per etappe (met een stabiel token) veranderen niet gedurende de
+// koers, maar zaten in de 789 KB-etappepagina die we vóór deze cache élke sync
+// opnieuw ophaalden en met een regex over twee stringkopieën ontleedden. Op de
+// 0,1-vCPU van de free tier gaf die burst — bij meerdere etappes tegelijk —
+// latentiepieken van seconden op álle requests. We cachen de URL's daarom per
+// etappe en slaan de zware pagina-fetch daarna over.
+const ajaxUrlCache = new Map();
+
 export async function fetchLetourFragments(stageNr, stageType) {
+  const wanted = [stageType === 'TTT' ? 'ete' : 'ite', 'itg', 'ipg', 'img', 'ijg'];
+
+  const fetchWith = async (urls) => {
+    const fragments = {};
+    for (const type of wanted) {
+      if (urls[type]) fragments[type] = await fetchText(`${LETOUR_BASE}${urls[type]}`);
+    }
+    return fragments;
+  };
+
+  const cached = ajaxUrlCache.get(stageNr);
+  if (cached) {
+    try {
+      return await fetchWith(cached);
+    } catch {
+      ajaxUrlCache.delete(stageNr); // token verlopen → hieronder de verse pagina
+    }
+  }
+
   const page = await fetchText(`${LETOUR_BASE}/en/rankings/stage-${stageNr}`);
   const urls = extractAjaxUrls(page, stageNr);
-  const wanted = [stageType === 'TTT' ? 'ete' : 'ite', 'itg', 'ipg', 'img', 'ijg'];
-  const fragments = {};
-  for (const type of wanted) {
-    if (urls[type]) fragments[type] = await fetchText(`${LETOUR_BASE}${urls[type]}`);
-  }
-  return fragments;
+  // Pas cachen als álle gewenste klassementen aanwezig zijn; is de uitslag nog
+  // niet volledig gepubliceerd, dan volgende ronde opnieuw de pagina proberen.
+  if (wanted.every((t) => urls[t])) ajaxUrlCache.set(stageNr, urls);
+  return fetchWith(urls);
 }
 
 // Ploegenklassementsfragment (ete/etg): positie + ploegnaam.
