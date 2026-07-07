@@ -108,16 +108,50 @@ export async function processStage(stageNr) {
       byUser.get(l.user_id).push(l);
     }
 
+    // Voor "Raak gekozen?": het team van 20 per gebruiker, om naast de echte
+    // score ook de optimale score (beste opstelling + beste kopman) te bepalen.
+    const teamRows = await h.all('SELECT * FROM user_teams');
+    const teamByUser = new Map();
+    for (const t of teamRows) {
+      if (!teamByUser.has(t.user_id)) teamByUser.set(t.user_id, []);
+      teamByUser.get(t.user_id).push(t.rider_id);
+    }
+
     const allUsers = await h.all('SELECT id FROM users');
     for (const u of allUsers) {
       const lineup = byUser.get(u.id) || [];
+      const lineupIds = new Set(lineup.map((l) => l.rider_id));
       let total = 0;
+      const lineupTotals = [];
+      let captainRawStage = 0;
+      let hasCaptain = false;
       for (const l of lineup) {
         const p = ptsByRider.get(l.rider_id);
         if (!p) continue;
-        total += p.stage * (l.is_captain ? CAPTAIN_FACTOR : 1) + p.class + p.team;
+        const rowTotal = p.stage * (l.is_captain ? CAPTAIN_FACTOR : 1) + p.class + p.team;
+        total += rowTotal;
+        lineupTotals.push(rowTotal);
+        if (l.is_captain) { captainRawStage = p.stage; hasCaptain = true; }
       }
       await h.run('INSERT INTO user_scores (user_id, stage_nr, points) VALUES (?, ?, ?)', [u.id, stageNr, total]);
+
+      // Optimaal = behaald + misgelopen door bankruil + misgelopen door kopmankeuze,
+      // dezelfde twee berekeningen als op de daguitslag-pagina (index.js:stageDaguitslag).
+      const teamIds = teamByUser.get(u.id) || [];
+      const benchIds = teamIds.filter((id) => !lineupIds.has(id));
+      const benchTotals = benchIds
+        .map((id) => { const p = ptsByRider.get(id); return p ? p.stage + p.class + p.team : 0; })
+        .sort((a, b) => b - a);
+      lineupTotals.sort((a, b) => a - b);
+      let gemist = 0;
+      for (let i = 0; i < Math.min(lineupTotals.length, benchTotals.length); i++) {
+        const gain = benchTotals[i] - lineupTotals[i];
+        if (gain <= 0) break;
+        gemist += gain;
+      }
+      const bestRawStage = Math.max(0, ...teamIds.map((id) => ptsByRider.get(id)?.stage || 0));
+      const gemistKopman = hasCaptain ? Math.max(0, bestRawStage - captainRawStage) : 0;
+      await h.run('UPDATE user_scores SET optimal_points = ? WHERE user_id = ? AND stage_nr = ?', [total + gemist + gemistKopman, u.id, stageNr]);
     }
 
     await h.run("UPDATE stages SET status = 'finished' WHERE nr = ?", [stageNr]);

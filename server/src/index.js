@@ -636,7 +636,9 @@ app.get('/api/ranking', ah(async (req, res) => {
     SELECT u.id, u.name, u.created_at,
       COALESCE((SELECT SUM(points) FROM user_scores s WHERE s.user_id = u.id), 0) AS total,
       COALESCE((SELECT points FROM user_scores s WHERE s.user_id = u.id AND s.stage_nr = ?), 0) AS last_stage,
-      COALESCE((SELECT points FROM user_scores s WHERE s.user_id = u.id AND s.stage_nr = 0), 0) AS final_points
+      COALESCE((SELECT points FROM user_scores s WHERE s.user_id = u.id AND s.stage_nr = 0), 0) AS final_points,
+      COALESCE((SELECT SUM(points) FROM user_scores s WHERE s.user_id = u.id AND s.stage_nr > 0), 0) AS stage_points,
+      COALESCE((SELECT SUM(optimal_points) FROM user_scores s WHERE s.user_id = u.id AND s.stage_nr > 0), 0) AS optimal_points
     FROM users u
     WHERE 1=1 ${userFilter}
     ORDER BY total DESC, u.created_at ASC
@@ -650,6 +652,8 @@ app.get('/api/ranking', ah(async (req, res) => {
       total: r.total, lastStage: r.last_stage, finalPoints: r.final_points,
       isMe: r.id === user.id,
       lineupReady: readySet.has(r.id),
+      // "Raak gekozen?": behaald t.o.v. optimaal haalbaar (bank + kopman), alleen over etappes.
+      efficiency: r.optimal_points > 0 ? Math.round((r.stage_points / r.optimal_points) * 100) : null,
     })),
   });
 }));

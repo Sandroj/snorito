@@ -13,6 +13,7 @@ interface RankRow {
   finalPoints: number;
   isMe: boolean;
   lineupReady: boolean;
+  efficiency: number | null;
 }
 
 interface Pool { id: number; name: string; }
@@ -151,6 +152,7 @@ export default function Ranking() {
               <th style={{ width: 40, paddingLeft: 16 }}>#</th>
               <th>Deelnemer</th>
               <th className="num">{lastStage ? `Et. ${lastStage}` : 'Laatste'}</th>
+              <th className="num">Raak gekozen?</th>
               <th className="num" style={{ paddingRight: 16 }}>Totaal</th>
             </tr>
           </thead>
@@ -170,6 +172,7 @@ export default function Ranking() {
                     : <span className="lineup-missing" title={`Nog geen opstelling voor etappe ${nextStage}`}>○</span>)}
                 </td>
                 <td className="num">{lastStage ? r.lastStage : '—'}</td>
+                <td className="num">{r.efficiency != null ? `${r.efficiency}%` : '—'}</td>
                 <td className="num" style={{ paddingRight: 16 }}><b>{r.total}</b></td>
               </tr>
             ))}

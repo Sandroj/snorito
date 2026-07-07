@@ -223,6 +223,8 @@ export async function initSchema() {
   await pool.query(SCHEMA_SQL);
   // Migratie voor bestaande databases van vóór de letour.fr-sync.
   await pool.query('ALTER TABLE riders ADD COLUMN IF NOT EXISTS bib INTEGER');
+  // Migratie voor "Raak gekozen?": optimale etappescore (beste opstelling + kopman).
+  await pool.query('ALTER TABLE user_scores ADD COLUMN IF NOT EXISTS optimal_points INTEGER');
 }
 
 export const BUDGET = 45_000_000;
