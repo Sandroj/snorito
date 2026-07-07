@@ -761,12 +761,18 @@ async function stageDaguitslag(userId, nr, stage) {
   const lineup = await buildRows(lineupIds, true);
   const bench = await buildRows(benchIds, false); // gesorteerd op totaal, aflopend
   const behaald = lineup.reduce((s, r) => s + r.total, 0);
+  const rawStage = (r) => (r.isCaptain ? r.stagePoints / CAPTAIN_FACTOR : r.stagePoints);
+  const rawTotal = (r) => rawStage(r) + r.classPoints + r.teamPoints;
 
   // Misgelopen = de nettowinst als je je slechtst scorende opgestelde renners had
   // geruild voor je best scorende bankzitters — maar alleen ruilen die punten
   // opleveren. Beste bankzitter tegen slechtste opsteller; stop zodra ruilen niet
   // meer loont (bankzitter <= opsteller). De ingewisselde bankzitters: swapIn=true.
-  const worstLineup = lineup.map((r) => r.total).sort((a, b) => a - b);
+  // Vergelijking gebeurt op RUWE totalen: de kopmanverdubbeling van de huidige
+  // kopman mag een ruil die op ruwe punten wél loont niet blokkeren — anders
+  // "beschermt" die verdubbeling een middelmatige kopman en onderschatten we
+  // het werkelijk haalbare (zie test/points.test.js voor het rekenvoorbeeld).
+  const worstLineup = lineup.map(rawTotal).sort((a, b) => a - b);
   let gemist = 0, gemistCount = 0;
   for (let i = 0; i < Math.min(lineup.length, bench.length); i++) {
     const gain = bench[i].total - worstLineup[i];
@@ -781,7 +787,6 @@ async function stageDaguitslag(userId, nr, stage) {
   // daadwerkelijke kopman — los van de bankzitter-ruil hierboven, dus geen
   // dubbeltelling. Ook een renner die niet opgesteld stond kan hier de
   // "betere kopman" zijn geweest.
-  const rawStage = (r) => (r.isCaptain ? r.stagePoints / CAPTAIN_FACTOR : r.stagePoints);
   const actualCaptain = lineup.find((r) => r.isCaptain);
   const bestRawStage = Math.max(0, ...lineup.map(rawStage), ...bench.map(rawStage));
   const gemistKopman = actualCaptain ? Math.max(0, bestRawStage - rawStage(actualCaptain)) : 0;

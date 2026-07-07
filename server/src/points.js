@@ -19,6 +19,50 @@ export const FINAL_POINTS = {
 export const FINAL_TEAM_POINTS = { alg: 24, punt: 18, berg: 18, jong: 9 };
 export const CLASSIFICATIONS = ['alg', 'punt', 'berg', 'jong'];
 
+// Optimale score voor één deelnemer bij één etappe: wat had hij maximaal kunnen
+// halen met zijn beste 9-uit-20 én de beste kopmankeuze? Twee losse, optelbare
+// deltas boven op de echte score:
+// - gemist: nettowinst van de beste bankruil, ranggewijs vergeleken op RUWE
+//   (onverdubbelde) totalen. Belangrijk: de kopmanverdubbeling van de huidige
+//   kopman mag deze vergelijking niet vervuilen — anders "beschermt" de
+//   verdubbeling een middelmatige kopman tegen een ruil die op ruwe punten wél
+//   zou lonen, en onderschat dit de werkelijk haalbare winst.
+// - gemistKopman: extra winst als de renner met de meeste ruwe ritpunten in het
+//   hele team (ook een bankzitter) kopman was geweest, los van de bankruil.
+// lineup: [{rider_id, is_captain}]; teamIds: alle renner-ids van het team van 20;
+// ptsByRider: Map<riderId, {stage,class,team}> (ruwe categoriepunten).
+export function computeOptimalStage(lineup, teamIds, ptsByRider) {
+  const lineupIds = new Set(lineup.map((l) => l.rider_id));
+  let total = 0;
+  const lineupRaw = [];
+  let captainRawStage = 0;
+  let hasCaptain = false;
+  for (const l of lineup) {
+    const p = ptsByRider.get(l.rider_id);
+    if (!p) continue;
+    total += p.stage * (l.is_captain ? CAPTAIN_FACTOR : 1) + p.class + p.team;
+    lineupRaw.push(p.stage + p.class + p.team);
+    if (l.is_captain) { captainRawStage = p.stage; hasCaptain = true; }
+  }
+
+  const benchIds = teamIds.filter((id) => !lineupIds.has(id));
+  const benchRaw = benchIds
+    .map((id) => { const p = ptsByRider.get(id); return p ? p.stage + p.class + p.team : 0; })
+    .sort((a, b) => b - a);
+  lineupRaw.sort((a, b) => a - b);
+  let gemist = 0;
+  for (let i = 0; i < Math.min(lineupRaw.length, benchRaw.length); i++) {
+    const gain = benchRaw[i] - lineupRaw[i];
+    if (gain <= 0) break;
+    gemist += gain;
+  }
+
+  const bestRawStage = Math.max(0, ...teamIds.map((id) => ptsByRider.get(id)?.stage || 0));
+  const gemistKopman = hasCaptain ? Math.max(0, bestRawStage - captainRawStage) : 0;
+
+  return { total, gemist, gemistKopman, optimal: total + gemist + gemistKopman };
+}
+
 const ADD_POINTS_SQL =
   'INSERT INTO rider_points (stage_nr, rider_id, category, points) VALUES (?, ?, ?, ?) ' +
   'ON CONFLICT (stage_nr, rider_id, category) DO UPDATE SET points = rider_points.points + EXCLUDED.points';
@@ -120,38 +164,9 @@ export async function processStage(stageNr) {
     const allUsers = await h.all('SELECT id FROM users');
     for (const u of allUsers) {
       const lineup = byUser.get(u.id) || [];
-      const lineupIds = new Set(lineup.map((l) => l.rider_id));
-      let total = 0;
-      const lineupTotals = [];
-      let captainRawStage = 0;
-      let hasCaptain = false;
-      for (const l of lineup) {
-        const p = ptsByRider.get(l.rider_id);
-        if (!p) continue;
-        const rowTotal = p.stage * (l.is_captain ? CAPTAIN_FACTOR : 1) + p.class + p.team;
-        total += rowTotal;
-        lineupTotals.push(rowTotal);
-        if (l.is_captain) { captainRawStage = p.stage; hasCaptain = true; }
-      }
-      await h.run('INSERT INTO user_scores (user_id, stage_nr, points) VALUES (?, ?, ?)', [u.id, stageNr, total]);
-
-      // Optimaal = behaald + misgelopen door bankruil + misgelopen door kopmankeuze,
-      // dezelfde twee berekeningen als op de daguitslag-pagina (index.js:stageDaguitslag).
       const teamIds = teamByUser.get(u.id) || [];
-      const benchIds = teamIds.filter((id) => !lineupIds.has(id));
-      const benchTotals = benchIds
-        .map((id) => { const p = ptsByRider.get(id); return p ? p.stage + p.class + p.team : 0; })
-        .sort((a, b) => b - a);
-      lineupTotals.sort((a, b) => a - b);
-      let gemist = 0;
-      for (let i = 0; i < Math.min(lineupTotals.length, benchTotals.length); i++) {
-        const gain = benchTotals[i] - lineupTotals[i];
-        if (gain <= 0) break;
-        gemist += gain;
-      }
-      const bestRawStage = Math.max(0, ...teamIds.map((id) => ptsByRider.get(id)?.stage || 0));
-      const gemistKopman = hasCaptain ? Math.max(0, bestRawStage - captainRawStage) : 0;
-      await h.run('UPDATE user_scores SET optimal_points = ? WHERE user_id = ? AND stage_nr = ?', [total + gemist + gemistKopman, u.id, stageNr]);
+      const { total, optimal } = computeOptimalStage(lineup, teamIds, ptsByRider);
+      await h.run('INSERT INTO user_scores (user_id, stage_nr, points, optimal_points) VALUES (?, ?, ?, ?)', [u.id, stageNr, total, optimal]);
     }
 
     await h.run("UPDATE stages SET status = 'finished' WHERE nr = ?", [stageNr]);
