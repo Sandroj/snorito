@@ -439,6 +439,8 @@ tr.me td:first-child { box-shadow: inset 3px 0 0 var(--geel); }
 .rider-cell-name .nm { font-weight: 650; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rider-cell-team { font-size: 11px; color: var(--muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
+.info-hint { cursor: help; opacity: .6; font-style: normal; }
+
 /* Daguitslag met opstelling-markering (deelnemersweergave in het klassement) */
 .daguitslag-summary { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: baseline; margin: 10px 2px; font-size: 13px; color: var(--muted); }
 .daguitslag-summary b { color: var(--ink); }

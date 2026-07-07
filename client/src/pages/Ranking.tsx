@@ -152,8 +152,16 @@ export default function Ranking() {
               <th style={{ width: 40, paddingLeft: 16 }}>#</th>
               <th>Deelnemer</th>
               <th className="num">{lastStage ? `Et. ${lastStage}` : 'Laatste'}</th>
-              <th className="num">Raak gekozen?</th>
-              <th className="num" style={{ paddingRight: 16 }}>Totaal</th>
+              <th className="num">Totaal</th>
+              <th className="num" style={{ paddingRight: 16 }}>
+                Raak gekozen?{' '}
+                <span
+                  className="info-hint"
+                  title="Percentage gescoorde punten t.o.v. het aantal punten dat je maximaal had kunnen scoren met je beste opstelling en kopmankeuze."
+                >
+                  ⓘ
+                </span>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -172,8 +180,8 @@ export default function Ranking() {
                     : <span className="lineup-missing" title={`Nog geen opstelling voor etappe ${nextStage}`}>○</span>)}
                 </td>
                 <td className="num">{lastStage ? r.lastStage : '—'}</td>
-                <td className="num">{r.efficiency != null ? `${r.efficiency.toLocaleString('nl-NL', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%` : '—'}</td>
-                <td className="num" style={{ paddingRight: 16 }}><b>{r.total}</b></td>
+                <td className="num"><b>{r.total}</b></td>
+                <td className="num" style={{ paddingRight: 16 }}>{r.efficiency != null ? `${r.efficiency.toLocaleString('nl-NL', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%` : '—'}</td>
               </tr>
             ))}
           </tbody>

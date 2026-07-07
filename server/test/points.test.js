@@ -23,6 +23,28 @@ test('computeOptimalStage: bankruil kijkt naar ruwe punten, niet naar de verdubb
   assert.equal(result.optimal, 16); // = beste opstelling {Y} met Y als kopman: 8 * 2
 });
 
+// Reproductie van de tweede bug: een opgestelde renner die buiten de top-20
+// eindigt, krijgt géén rider_points-rij (niet eens een 0). Die renner mag niet
+// worden overgeslagen in de bankruil-vergelijking — dat verkleinde de lijst en
+// liet een gewaarborgde ruil (bankzitter Y verslaat de renner-zonder-punten
+// op elk moment) onterecht wegvallen.
+test('computeOptimalStage: opgestelde renner zonder rider_points-rij telt als 0, wordt niet overgeslagen', () => {
+  const lineup = [{ rider_id: 'X', is_captain: true }, { rider_id: 'Z', is_captain: false }];
+  const teamIds = ['X', 'Z', 'Y'];
+  const ptsByRider = new Map([
+    ['X', { stage: 20, class: 0, team: 0 }],
+    // Z heeft geen rider_points-rij deze etappe (buiten top-20 geëindigd).
+    ['Y', { stage: 5, class: 0, team: 0 }],
+  ]);
+
+  const result = computeOptimalStage(lineup, teamIds, ptsByRider);
+
+  assert.equal(result.total, 40); // 20*2 + 0 (Z)
+  assert.equal(result.gemist, 5); // ruil Z (raw 0) voor Y (raw 5)
+  assert.equal(result.gemistKopman, 0); // X blijft de beste kopman (20 > 5)
+  assert.equal(result.optimal, 45);
+});
+
 test('computeOptimalStage: zonder winstgevende ruil of betere kopman blijft optimaal gelijk aan behaald', () => {
   const lineup = [{ rider_id: 'X', is_captain: true }, { rider_id: 'Z', is_captain: false }];
   const teamIds = ['X', 'Z', 'Y'];

@@ -38,8 +38,11 @@ export function computeOptimalStage(lineup, teamIds, ptsByRider) {
   let captainRawStage = 0;
   let hasCaptain = false;
   for (const l of lineup) {
-    const p = ptsByRider.get(l.rider_id);
-    if (!p) continue;
+    // Buiten de top-20 (of top-5 klassement) krijgt een renner geen rider_points-rij
+    // — geen 0-rij, gewoon afwezig. Dat is de normale situatie voor de meeste van
+    // je 9 opgestelde renners, dus deze renners overslaan (i.p.v. als 0 meetellen)
+    // liet ze ten onrechte buiten de bankruil-vergelijking vallen.
+    const p = ptsByRider.get(l.rider_id) || { stage: 0, class: 0, team: 0 };
     total += p.stage * (l.is_captain ? CAPTAIN_FACTOR : 1) + p.class + p.team;
     lineupRaw.push(p.stage + p.class + p.team);
     if (l.is_captain) { captainRawStage = p.stage; hasCaptain = true; }
