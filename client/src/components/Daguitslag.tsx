@@ -23,6 +23,7 @@ export interface StageDetail {
   behaald?: number;
   gemist?: number;
   gemistCount?: number;
+  gemistKopman?: number;
   lineup?: PointRow[];
   bench?: PointRow[];
   final?: boolean;
@@ -79,6 +80,11 @@ export function Daguitslag({ d }: { d: StageDetail }) {
         {(d.gemistCount ?? 0) > 0 && (
           <span className="gemist">
             Misgelopen <b>{d.gemist}</b> pt · {d.gemistCount} bankzitter{(d.gemistCount ?? 0) > 1 ? 's' : ''}
+          </span>
+        )}
+        {(d.gemistKopman ?? 0) > 0 && (
+          <span className="gemist">
+            Andere kopman <b>+{d.gemistKopman}</b> pt
           </span>
         )}
       </div>

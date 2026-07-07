@@ -772,7 +772,17 @@ async function stageDaguitslag(userId, nr, stage) {
   }
   bench.forEach((b, i) => { b.swapIn = i < gemistCount; });
 
-  return { stageNr: nr, type: stage.type, behaald, gemist, gemistCount, lineup, bench };
+  // Misgelopen door kopmankeuze = het verschil tussen de ritpunten van de
+  // best scorende renner in je hele team (opstelling én bank) en die van je
+  // daadwerkelijke kopman — los van de bankzitter-ruil hierboven, dus geen
+  // dubbeltelling. Ook een renner die niet opgesteld stond kan hier de
+  // "betere kopman" zijn geweest.
+  const rawStage = (r) => (r.isCaptain ? r.stagePoints / CAPTAIN_FACTOR : r.stagePoints);
+  const actualCaptain = lineup.find((r) => r.isCaptain);
+  const bestRawStage = Math.max(0, ...lineup.map(rawStage), ...bench.map(rawStage));
+  const gemistKopman = actualCaptain ? Math.max(0, bestRawStage - rawStage(actualCaptain)) : 0;
+
+  return { stageNr: nr, type: stage.type, behaald, gemist, gemistCount, gemistKopman, lineup, bench };
 }
 
 app.get('/api/my/points/:nr', ah(async (req, res) => {
