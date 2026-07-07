@@ -144,3 +144,75 @@ Daarom:
    2-5 niets).
 5. Spelregels of puntwaardes wijzigen? Altijd eerst dat document bijwerken, dan
    points.js, dan tests.
+
+---
+
+## Correctie op de projectomschrijving hierboven
+
+De oorspronkelijke omschrijving ("team van 9 renners") is bewust losgelaten.
+Het echte Scorito-model is leidend: **team van 20 renners, budget €45M, max 4
+per ploeg, per etappe 9 opstellen + 1 kopman (kopman ×2 op de daguitslag)**.
+De app heet **Snorito** (mapnaam is nog "scorita").
+
+## Architectuur en deployment (stand 7 juli 2026)
+
+- **Stack:** Node/Express (`server/`) + Neon Postgres (gemigreerd van SQLite),
+  React 18 + Vite + TypeScript (`client/`). Eén service serveert API én
+  gebouwde frontend.
+- **Live:** https://snorito-2j6w.onrender.com op Render (free tier).
+  **Deploy = commit + push naar main** — Render bouwt en rolt automatisch uit.
+  Er is dus geen aparte staging: wat je pusht, staat minuten later live.
+- **Puntenmotor:** `server/src/points.js` (tabellen bovenaan). Teamregels:
+  constants in `server/src/db.js`. Spelregelpagina leest live uit
+  `GET /api/rules`, dus UI en berekening kunnen niet uiteenlopen.
+- **Uitslagen-import:** GitHub Action `pcs-sync.yml` ("Uitslagen sync") haalt
+  letour.fr op en post naar `/api/cron/letour-html` (`server/src/letour.js` +
+  `sync.js`). Procyclingstats werkt níet vanaf GitHub-runners (Cloudflare).
+- **Overige workflows:** `keepalive.yml` (tegen Render cold starts, samen met
+  cron-job.org op `/healthz`) en `backup.yml` (backups van teams/opstellingen).
+- **E-mail:** Brevo (opstellingsherinnering 3 uur voor etappestart,
+  `server/src/reminders.js`; wachtwoord-reset via `mail.js`). Keys staan als
+  env-vars in Render, net als `DATABASE_URL` en `CRON_SECRET`.
+
+## Verifiëren van wijzigingen (belangrijk — live product)
+
+Lokaal kan niet alles: de sandbox blokkeert de Neon-database en het klassement
+zit achter login. Gebruik daarom deze keten:
+
+1. Client: `npm run build` (tsc + vite) moet slagen.
+2. Server: `node --check` op gewijzigde bestanden + servertests draaien.
+3. Na push: de live bundel-hash pollen tot de nieuwe build online staat.
+4. Visuele controle in de live app doet Max zelf (ingelogd).
+
+`git push` toont in de sandbox een credential-waarschuwing maar slaagt gewoon —
+controleer de ref-update-regel.
+
+## Als er iets misgaat tijdens een etappe (runbook)
+
+1. Kloppen punten of uitslag niet? Volg de werkafspraken hierboven: importlogica
+   fixen of adminformulier, nooit directe SQL.
+2. Site traag of plat? Render free tier valt in slaap; check `/healthz` en de
+   keepalive-action. Structurele versnelling = Render Starter.
+3. Data kwijt of kapot? Eerst de backup-artifacts van `backup.yml` checken
+   voordat je iets herstelt of herseedt. **Nooit herseeden op productie** —
+   dat wist accounts en poules.
+4. Sync draait niet? `gh run list` voor "Uitslagen sync", daarna handmatig
+   triggeren met `gh workflow run`.
+
+De Tour loopt t/m 26 juli 2026 — tot die tijd is dit een live product met echte
+gebruikers. Wees terughoudend met refactors tijdens koersdagen.
+
+## Monitoring (sinds 7 juli 2026)
+
+Er draait een geplande taak **`snorito-ochtendcheck`** (Claude, Scheduled-sectie,
+dagelijks 08:33): read-only check op `/healthz`, de laatste "Uitslagen sync"-run
+en `/api/rules`, met pushrapport aan Max. Loopt t/m 26 juli; meldt daarna zelf
+dat hij uit kan. Niet dupliceren met extra monitoring zonder overleg.
+
+Audit 7 juli (2 subagents + handmatige verificatie): puntentabellen, teamregels
+en `/api/rules` zijn onderling consistent en conform docs/scorito-spelregels.md.
+Let op bij toekomstige audits: de TTT-regel "posities 2–5 punt/berg niets" zit
+níet in points.js maar in de importlaag (`filterJerseyPlaceholders`,
+letour.js:42 + sync.js:216, met test) — een audit die alleen points.js leest
+meldt hier ten onrechte een afwijking. Nog open: de regel "eindklassement pas
+na ≥11 etappes" (spelregels) wordt niet in code afgedwongen.
