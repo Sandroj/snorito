@@ -1,8 +1,40 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { api, euroShort } from '../api';
 import { RiderInfo } from '../components/RiderInfo';
 import { Daguitslag, StageDetail } from '../components/Daguitslag';
 import { CheckIcon } from '../components/Icons';
+
+// Klein (i)-icoontje met uitleg: werkt zowel op hover (desktop) als tik (mobiel),
+// sluit bij een klik elders.
+function InfoHint({ text }: { text: string }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDocClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('click', onDocClick);
+    return () => document.removeEventListener('click', onDocClick);
+  }, [open]);
+
+  return (
+    <span ref={ref} className="info-hint-wrap">
+      <button
+        type="button"
+        className="info-hint"
+        title={text}
+        aria-label="Uitleg"
+        onClick={(e) => { e.stopPropagation(); setOpen((o) => !o); }}
+      >
+        ⓘ
+      </button>
+      {open && <span className="info-hint-bubble" onClick={(e) => e.stopPropagation()}>{text}</span>}
+    </span>
+  );
+}
 
 interface RankRow {
   position: number;
@@ -51,7 +83,7 @@ function ParticipantDetail({ userId, onBack }: { userId: number; onBack: () => v
 
   return (
     <div className="fade-in">
-      <button className="btn btn-ghost btn-sm" onClick={onBack}>← Terug naar klassement</button>
+      <button className="btn btn-ghost btn-sm" style={{ marginTop: 20 }} onClick={onBack}>← Terug naar klassement</button>
       <div className="total-hero" style={{ marginTop: 12 }}>
         <div className="lab">{data.name}</div>
         <div className="big">{data.total}</div>
@@ -108,6 +140,13 @@ export default function Ranking() {
   const [lastStage, setLastStage] = useState<number | null>(null);
   const [nextStage, setNextStage] = useState<number | null>(null);
   const [selected, setSelected] = useState<number | null>(null);
+  const location = useLocation();
+
+  // Terug naar het overzicht bij elke (her)navigatie naar deze pagina — ook als
+  // je al op /klassement stond en via een deelnemer in de detailweergave zat.
+  useEffect(() => {
+    setSelected(null);
+  }, [location.key]);
 
   useEffect(() => {
     api('/api/pools').then((p) => setPools(p.pools));
@@ -155,12 +194,7 @@ export default function Ranking() {
               <th className="num">Totaal</th>
               <th className="num" style={{ paddingRight: 16 }}>
                 Raak gekozen?{' '}
-                <span
-                  className="info-hint"
-                  title="Percentage gescoorde punten t.o.v. het aantal punten dat je maximaal had kunnen scoren met je beste opstelling en kopmankeuze."
-                >
-                  ⓘ
-                </span>
+                <InfoHint text="Percentage behaalde punten t.o.v. potentiële punten: wat je hebt gescoord ten opzichte van wat maximaal mogelijk was met je beste opstelling en kopmankeuze." />
               </th>
             </tr>
           </thead>
