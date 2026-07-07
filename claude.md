@@ -192,7 +192,18 @@ controleer de ref-update-regel.
 1. Kloppen punten of uitslag niet? Volg de werkafspraken hierboven: importlogica
    fixen of adminformulier, nooit directe SQL.
 2. Site traag of plat? Render free tier valt in slaap; check `/healthz` en de
-   keepalive-action. Structurele versnelling = Render Starter.
+   keepalive-action. Structurele versnelling = Render Starter. **Let op de
+   gevoelige plek: de in-process letour-sync** (elke 2 min, `index.js`
+   `setInterval` → `runSync`). Op de 0,1-vCPU free tier is dit de enige plek die
+   álle requests kan laten pieken (ook `/healthz`, dat verder nul werk doet):
+   `fetchLetourFragments` doet een synchrone cheerio-parse per etappe. Diagnose:
+   piekt `/healthz` naar seconden terwijl p50 laag blijft, dan is het
+   proces-blokkade door de sync, niet de database. Twee remmen zitten er al in
+   (7 juli): AJAX-URL's worden per etappe gecached (geen 789 KB-paginafetch meer
+   per ronde, `letour.js`), en de 2-min-loop draait `fastOnly` — alleen
+   'started' etappes; rechecks van afgeronde etappes gaan via de 10-min Action
+   (`syncTick` geeft ze wél terug, dus de Action verandert niet). Zoek bij een
+   nieuwe piek dus eerst hoeveel etappes tegelijk 'started'/in-recheck zijn.
 3. Data kwijt of kapot? Eerst de backup-artifacts van `backup.yml` checken
    voordat je iets herstelt of herseedt. **Nooit herseeden op productie** —
    dat wist accounts en poules.
