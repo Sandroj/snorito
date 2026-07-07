@@ -172,7 +172,7 @@ export default function Ranking() {
                     : <span className="lineup-missing" title={`Nog geen opstelling voor etappe ${nextStage}`}>○</span>)}
                 </td>
                 <td className="num">{lastStage ? r.lastStage : '—'}</td>
-                <td className="num">{r.efficiency != null ? `${r.efficiency}%` : '—'}</td>
+                <td className="num">{r.efficiency != null ? `${r.efficiency.toLocaleString('nl-NL', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%` : '—'}</td>
                 <td className="num" style={{ paddingRight: 16 }}><b>{r.total}</b></td>
               </tr>
             ))}

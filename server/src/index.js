@@ -652,8 +652,10 @@ app.get('/api/ranking', ah(async (req, res) => {
       total: r.total, lastStage: r.last_stage, finalPoints: r.final_points,
       isMe: r.id === user.id,
       lineupReady: readySet.has(r.id),
-      // "Raak gekozen?": behaald t.o.v. optimaal haalbaar (bank + kopman), alleen over etappes.
-      efficiency: r.optimal_points > 0 ? Math.round((r.stage_points / r.optimal_points) * 100) : null,
+      // "Raak gekozen?": behaald t.o.v. optimaal haalbaar (bank + kopman) in PUNTEN
+      // (niet in aantal juist opgestelde renners), alleen over etappes. Eén cijfer
+      // achter de komma.
+      efficiency: r.optimal_points > 0 ? Math.round((r.stage_points / r.optimal_points) * 1000) / 10 : null,
     })),
   });
 }));
