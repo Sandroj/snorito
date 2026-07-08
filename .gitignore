@@ -8,3 +8,9 @@ client/dist/
 .env
 .playwright-mcp/
 *.tsbuildinfo
+.env.*
+dist/
+build/
+__pycache__/
+.venv/
+venv/
