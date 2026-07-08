@@ -95,48 +95,52 @@ export default function Rules() {
 
       <div className="card">
         <h2>Klassementen na de etappe (top 5)</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Positie</th>
-              {Object.entries(CLS_META).map(([k, m]) => (
-                <th key={k} className="num"><span className={`trui ${m.trui}`} />{m.label}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {[0, 1, 2, 3, 4].map((i) => (
-              <tr key={i}>
-                <td>{i + 1}</td>
-                {Object.keys(CLS_META).map((k) => (
-                  <td key={k} className="num">{rules.classPointsAfterStage[k][i] ?? '—'}</td>
+        <div className="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Positie</th>
+                {Object.entries(CLS_META).map(([k, m]) => (
+                  <th key={k} className="num cls-th"><span className={`trui ${m.trui}`} />{m.label}</th>
                 ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {[0, 1, 2, 3, 4].map((i) => (
+                <tr key={i}>
+                  <td>{i + 1}</td>
+                  {Object.keys(CLS_META).map((k) => (
+                    <td key={k} className="num">{rules.classPointsAfterStage[k][i] ?? '—'}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <div className="card">
         <h2>Teampunten na de etappe</h2>
         <p className="muted">Voor ploeggenoten van de ritwinnaar en van de klassementsleiders (mits de renner gestart is).</p>
-        <table>
-          <thead>
-            <tr><th>Ritwinst</th>
-              {Object.entries(CLS_META).map(([k, m]) => (
-                <th key={k} className="num"><span className={`trui ${m.trui}`} />{m.label}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><b>{rules.teamPointsAfterStage.stageWin}</b></td>
-              {Object.keys(CLS_META).map((k) => (
-                <td key={k} className="num"><b>{rules.teamPointsAfterStage[k]}</b></td>
-              ))}
-            </tr>
-          </tbody>
-        </table>
+        <div className="table-scroll">
+          <table>
+            <thead>
+              <tr><th>Ritwinst</th>
+                {Object.entries(CLS_META).map(([k, m]) => (
+                  <th key={k} className="num cls-th"><span className={`trui ${m.trui}`} />{m.label}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><b>{rules.teamPointsAfterStage.stageWin}</b></td>
+                {Object.keys(CLS_META).map((k) => (
+                  <td key={k} className="num"><b>{rules.teamPointsAfterStage[k]}</b></td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <div className="card">
@@ -152,39 +156,32 @@ export default function Rules() {
       <div className="card">
         <h2>Punten eindklassement</h2>
         <p className="muted">Voor al je {rules.teamSize} renners die de Tour uitrijden — opstellen hoeft niet.</p>
-        <table>
-          <thead>
-            <tr>
-              <th>Positie</th>
-              {Object.entries(CLS_META).map(([k, m]) => (
-                <th key={k} className="num"><span className={`trui ${m.trui}`} />{m.label}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rules.finalPoints.alg.map((_, i) => (
-              <tr key={i}>
-                <td>{i + 1}</td>
-                {Object.keys(CLS_META).map((k) => (
-                  <td key={k} className="num">{rules.finalPoints[k][i] ?? ''}</td>
+        <div className="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Positie</th>
+                {Object.entries(CLS_META).map(([k, m]) => (
+                  <th key={k} className="num cls-th"><span className={`trui ${m.trui}`} />{m.label}</th>
                 ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {rules.finalPoints.alg.map((_, i) => (
+                <tr key={i}>
+                  <td>{i + 1}</td>
+                  {Object.keys(CLS_META).map((k) => (
+                    <td key={k} className="num">{rules.finalPoints[k][i] ?? ''}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         <p className="muted" style={{ marginTop: 10 }}>
           Teampunten eindklassement (ploeggenoten van de winnaar, gestart in de slotrit): algemeen {rules.finalTeamPoints.alg},
           punten {rules.finalTeamPoints.punt}, berg {rules.finalTeamPoints.berg}, jongeren {rules.finalTeamPoints.jong}.
         </p>
-      </div>
-
-      <div className="section-label">Transparantie</div>
-      <div className="code-note">
-        Deze pagina leest de tabellen rechtstreeks uit de puntenmotor via <code>GET /api/rules</code> —
-        wat je hier ziet is dus altijd precies wat er wordt berekend.
-        De motor zelf staat in <code>server/src/points.js</code> (tabellen bovenaan het bestand),
-        de teamregels in <code>server/src/db.js</code>. De originele Scorito-regels waarop dit is gebaseerd
-        staan in <code>docs/scorito-spelregels.md</code>.
       </div>
     </div>
   );
