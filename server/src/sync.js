@@ -29,7 +29,6 @@ export async function saveStageResult(nr, { positions = [], tttPositions = [], c
   await tx(async (h) => {
     await h.run('DELETE FROM stage_results WHERE stage_nr = ?', [nr]);
     await h.run('DELETE FROM ttt_results WHERE stage_nr = ?', [nr]);
-    await h.run('DELETE FROM classification_standings WHERE stage_nr = ?', [nr]);
 
     if (stage.type === 'TTT') {
       for (const p of tttPositions) {
@@ -41,8 +40,19 @@ export async function saveStageResult(nr, { positions = [], tttPositions = [], c
       }
     }
 
+    // Per klassement vervangen i.p.v. alles in één keer wissen: een lege lijst van
+    // de auto-sync betekent meestal "dit fragment was nog niet compleet toen we
+    // ophaalden" (bijv. jong/wit-klassement dat net na de daguitslag publiceert),
+    // niet "dit klassement is leeg". Zonder deze uitzondering wiste een auto-sync
+    // met een tijdelijk lege fetch een al goed opgeslagen klassement blijvend leeg
+    // (gebeurd bij etappe 5: jongerenklassement raakte zo leeg en werd, eenmaal
+    // buiten het 48u-hercheckvenster, niet meer automatisch hersteld). De
+    // handmatige adminroute (source='manual') mag een klassement wél expliciet
+    // leegmaken — dat is een bewuste keuze van de beheerder.
     for (const cls of CLASSIFICATIONS) {
       const arr = classifications[cls] || [];
+      if (arr.length === 0 && source !== 'manual') continue;
+      await h.run('DELETE FROM classification_standings WHERE stage_nr = ? AND classification = ?', [nr, cls]);
       for (let i = 0; i < arr.length; i++) {
         if (arr[i]) await h.run('INSERT INTO classification_standings (stage_nr, classification, position, rider_id) VALUES (?, ?, ?, ?)', [nr, cls, i + 1, arr[i]]);
       }
