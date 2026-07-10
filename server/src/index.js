@@ -380,11 +380,21 @@ app.get('/api/me', ah(async (req, res) => {
 // Basisdata is voor iedereen gelijk en verandert alleen bij imports of
 // admin-wijzigingen — servercache (zie cache.js) scheelt Neon-roundtrips.
 app.get('/api/riders', ah(async (_req, res) => {
-  const riders = await cached('riders', 30_000, async () => (await all(`
-    SELECT r.*, t.name AS team_name, t.abbreviation AS team_abbr, t.shirt_url AS team_shirt
-    FROM riders r JOIN cycling_teams t ON t.id = r.team_id
-    ORDER BY r.price DESC, r.name
-  `)).map((r) => ({ ...r, qualities: JSON.parse(r.qualities) })));
+  const riders = await cached('riders', 30_000, async () => {
+    // Bepaal huige etappe: laatst gestarte (status != 'open')
+    const currentStageRow = await get("SELECT MAX(nr) as max FROM stages WHERE status != ?", ['open']);
+    const currentStage = currentStageRow?.max || 999; // 999 = geen etappe gestart
+
+    return (await all(`
+      SELECT r.*, t.name AS team_name, t.abbreviation AS team_abbr, t.shirt_url AS team_shirt
+      FROM riders r JOIN cycling_teams t ON t.id = r.team_id
+      ORDER BY r.price DESC, r.name
+    `)).map((r) => ({
+      ...r,
+      qualities: JSON.parse(r.qualities),
+      available: r.last_started_stage === null || r.last_started_stage >= currentStage
+    }));
+  });
   res.json({ riders, budget: BUDGET, teamSize: TEAM_SIZE, maxPerTeam: MAX_PER_CYCLING_TEAM });
 }));
 
