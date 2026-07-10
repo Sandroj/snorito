@@ -11,6 +11,7 @@ export interface Rider {
   type: string;
   qualities: Record<string, number>;
   last_started_stage: number | null;
+  available?: boolean;
 }
 
 export interface CyclingTeam {
