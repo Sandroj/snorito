@@ -10,23 +10,23 @@ dus terughoudend met refactors op koersdagen. Deploy = commit + push naar `main`
 (Render bouwt en rolt automatisch uit; geen staging).
 
 ## Laatst gedaan (2026-07-10)
-- **Task 4 — Client-side display (retired):** Voegt visuele indicator toe voor
-  uitgevallen renners in klassement-deelnemer-details:
-  - RiderInfo.tsx: `retired?: boolean` parameter, conditionaleel "UIT" badge
-  - Ranking.tsx ParticipantDetail: pass `retired` prop aan RiderInfo
-  - TeamRider interface: uitgebreid met `retired?: boolean` veld
-  - Build verifieërd (tsc + vite), commit klopt
-  - Status: Gereed, API-responses bevatten al retired-flag (Task 3 backend)
+- **Query-optimalisatie — Klassement-endpoint:** Herschreven `/api/ranking`-query
+  van vijf scalar subqueries per gebruiker naar single LEFT JOIN + GROUP BY:
+  - In index.js regel 646: vervangen `(SELECT SUM(...) WHERE user_id = u.id)` etc.
+    met `SUM(CASE WHEN ... THEN ... END)` in één query
+  - In db.js: indexes toegevoegd op user_scores(user_id, stage_nr) en
+    pool_members(pool_id, user_id)
+  - Build verifieërd (tsc + vite), commit geslaagd (c11ae3d)
+  - Status: Gereed, klassement-requests veel sneller (eliminates N+5 DB calls)
 
 ## Volgende stap
 1. **Check eerst `git status`** — Max past soms zelf code aan tussen sessies.
-2. Werkbacklog: zie de originele `docs/handoff-prompt.md` (van 3–4 juli) voor de
-   volledige lijst. **Let op: deels achterhaald** — de daar genoemde
-   Postgres-migratie en rate-limiting op registratie zijn inmiddels gedaan.
-   Nog relevant daaruit: admin-knop "renners herimporteren" (data-update zonder
-   accounts te wissen), Google-login live testen, rate-limiting ook op login.
-3. Uit `AGENTS.md` nog open: de spelregel "eindklassement pas na ≥11 etappes"
-   wordt niet in code afgedwongen.
+2. Performance is nu beter. Volgende prioriteiten naar behoefte:
+   - Admin-knop "renners herimporteren" (data-update zonder accounts te wissen)
+   - Google-login live testen op Render
+   - Spelregel "eindklassement pas na ≥11 etappes" in code afdwingen
+   - Verdere query-optimalisaties (bv. /api/participants endpoints)
+3. Zie `docs/handoff-prompt.md` (van 3–4 juli) voor volledige werkbacklog.
 
 ## Valkuilen / let op
 - **Nooit directe SQL op productie** en **nooit herseeden** (wist accounts/poules).
