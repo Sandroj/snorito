@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { api } from '../api';
 import { useSession } from '../App';
 import { Daguitslag, StageDetail } from '../components/Daguitslag';
@@ -32,6 +32,15 @@ export default function Points() {
 
   const total = scores.reduce((s, x) => s + x.points, 0);
 
+  const stagesData = useMemo(() =>
+    scores.map(s => ({
+      stageNr: s.stageNr,
+      points: s.points,
+      label: s.stageNr === 0 ? 'Eindklassement' : `Etappe ${s.stageNr}`
+    })),
+    [scores]
+  );
+
   return (
     <div className="fade-in">
       <h1>Mijn uitslagen</h1>
@@ -53,11 +62,7 @@ export default function Points() {
 
       {scores.length > 0 && (
         <StageAccordion
-          stages={scores.map(s => ({
-            stageNr: s.stageNr,
-            points: s.points,
-            label: s.stageNr === 0 ? 'Eindklassement' : `Etappe ${s.stageNr}`
-          }))}
+          stages={stagesData}
           onStageOpen={(nr) => setOpenStage(nr)}
           isLoading={openStage != null && detail == null}
         >

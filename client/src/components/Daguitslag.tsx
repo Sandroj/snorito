@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { RiderInfo } from './RiderInfo';
 import { PointsBreakdown, BreakdownRow } from './PointsBreakdown';
 
@@ -34,7 +35,7 @@ const posLabel = (p: number | null) => (p == null ? '—' : String(p));
 const captainChip = (isCaptain: boolean) =>
   isCaptain ? <span className="chip chip-geel" style={{ marginLeft: 6 }} title="Kopman">K</span> : null;
 
-function PointTable({ rows, empty }: { rows: PointRow[]; empty: string }) {
+const PointTable = memo(function PointTable({ rows, empty }: { rows: PointRow[]; empty: string }) {
   if (rows.length === 0) return <p className="muted" style={{ margin: '8px 2px' }}>{empty}</p>;
   return (
     <table className="daguitslag">
@@ -66,7 +67,7 @@ function PointTable({ rows, empty }: { rows: PointRow[]; empty: string }) {
       </tbody>
     </table>
   );
-}
+});
 
 // Puntenoverzicht van één etappe: je opstelling (behaalde punten) en je bank
 // (de punten die de niet-opgestelde renners zouden hebben opgeleverd).

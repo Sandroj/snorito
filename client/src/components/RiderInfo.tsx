@@ -1,11 +1,12 @@
 import type { ReactNode } from 'react';
+import { memo } from 'react';
 import { flag, typeChipClass } from '../api';
 import { Shirt } from './Quality';
 
 // Compacte rennerweergave zoals bij de teamselectie (shirt + vlag + naam +
 // type-chip + ploegnaam), maar zonder de kwaliteiten. Gebruikt in het
 // klassement: de teamlijst en de puntenuitsplitsing per etappe.
-export function RiderInfo({
+export const RiderInfo = memo(function RiderInfo({
   shirt, nationality, name, type, team, extra, retired,
 }: {
   shirt: string | null;
@@ -30,4 +31,4 @@ export function RiderInfo({
       </div>
     </div>
   );
-}
+});
