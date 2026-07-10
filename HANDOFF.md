@@ -9,12 +9,14 @@ Postgres. De Tour de France 2026 loopt **t/m 26 juli 2026** — echte gebruikers
 dus terughoudend met refactors op koersdagen. Deploy = commit + push naar `main`
 (Render bouwt en rolt automatisch uit; geen staging).
 
-## Laatst gedaan (2026-07-08)
-- Tool-neutrale doorontwikkel-flow opgezet: `AGENTS.md` (was `claude.md`, inhoud
-  behouden) + symlinks `CLAUDE.md`/`GEMINI.md`, dit `HANDOFF.md`, `.gitignore`.
-- Daarvoor (git log): mobiel-UX-polish (trui-koppen, uitleg-tooltip, compacte
-  daguitslag, PWA), klassement-features ("Raak gekozen?"-percentage, misgelopen
-  kopmanpunten) en enkele puntenfixes. Allemaal live.
+## Laatst gedaan (2026-07-10)
+- **Task 2 — Retired riders:** Voorkomen dat gepensioneerde renners geselecteerd
+  kunnen worden bij teamselectie. Geïmplementeerd:
+  - Backend: `available` flag op riders API (gebaseerd op `last_started_stage`)
+  - Frontend: canAdd() check, visuele "Niet beschikbaar" badge, dynamische disable-reason
+  - Keuze bewaard: reeds geselecteerde niet-beschikbare renners kunnen verwijderd worden
+  - Geverifieerd: spec compliant, TypeScript clean, commit klopt
+  - Status: LIVE
 
 ## Volgende stap
 1. **Check eerst `git status`** — Max past soms zelf code aan tussen sessies.
