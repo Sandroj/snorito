@@ -231,6 +231,12 @@ export async function initSchema() {
   // Performance indexes voor team selection (IN clause lookups)
   await pool.query('CREATE INDEX IF NOT EXISTS idx_riders_id ON riders(id)');
   await pool.query('CREATE INDEX IF NOT EXISTS idx_stage_results_rider ON stage_results(rider_id)');
+  // Hot query paths indexing
+  await pool.query('CREATE INDEX IF NOT EXISTS idx_stage_results_stage ON stage_results(stage_nr)');
+  await pool.query('CREATE INDEX IF NOT EXISTS idx_pool_members_pool ON pool_members(pool_id)');
+  await pool.query('CREATE INDEX IF NOT EXISTS idx_riders_team ON riders(team_id)');
+  await pool.query('CREATE INDEX IF NOT EXISTS idx_riders_available ON riders(last_started_stage)');
+  await pool.query('CREATE INDEX IF NOT EXISTS idx_lineups_user_stage ON lineups(user_id, stage_nr)');
 }
 
 export const BUDGET = 45_000_000;
