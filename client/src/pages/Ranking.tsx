@@ -1,8 +1,7 @@
-import { useEffect, useState, useRef, useMemo } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { api, euroShort } from '../api';
 import { RiderInfo } from '../components/RiderInfo';
-import { Daguitslag, StageDetail } from '../components/Daguitslag';
 import { StageAccordion } from '../components/StageAccordion';
 import { CheckIcon } from '../components/Icons';
 
@@ -65,29 +64,12 @@ interface Participant {
 // etappes geeft de server bewust niet terug.
 function ParticipantDetail({ userId, onBack }: { userId: number; onBack: () => void }) {
   const [data, setData] = useState<Participant | null>(null);
-  const [openStage, setOpenStage] = useState<number | null>(null);
-  const [detail, setDetail] = useState<StageDetail | null>(null);
 
   useEffect(() => {
     api(`/api/participants/${userId}`).then(setData);
   }, [userId]);
 
-  useEffect(() => {
-    if (openStage == null) return;
-    setDetail(null);
-    api(`/api/participants/${userId}/points/${openStage}`).then(setDetail);
-  }, [userId, openStage]);
-
   if (!data) return <div className="center" style={{ margin: 40, color: '#667085' }}>Laden…</div>;
-
-  const stagesData = useMemo(() =>
-    data.scores.map(s => ({
-      stageNr: s.stageNr,
-      points: s.points,
-      label: s.stageNr === 0 ? 'Eindklassement' : `Etappe ${s.stageNr}`
-    })),
-    [data.scores]
-  );
 
   return (
     <div className="fade-in">
@@ -104,12 +86,13 @@ function ParticipantDetail({ userId, onBack }: { userId: number; onBack: () => v
       )}
       {data.scores.length > 0 && (
         <StageAccordion
-          stages={stagesData}
-          onStageOpen={(nr) => setOpenStage(nr)}
-          isLoading={openStage != null && detail == null}
-        >
-          {detail && <Daguitslag d={detail} />}
-        </StageAccordion>
+          userId={userId}
+          stages={data.scores.map((s) => ({
+            stageNr: s.stageNr,
+            points: s.points,
+            label: s.stageNr === 0 ? 'Eindklassement' : `Etappe ${s.stageNr}`,
+          }))}
+        />
       )}
 
       <div className="section-label">Team van {data.team.length} renners</div>
@@ -120,7 +103,7 @@ function ParticipantDetail({ userId, onBack }: { userId: number; onBack: () => v
           <table>
             <tbody>
               {data.team.map((r) => (
-                <tr key={r.id}>
+                <tr key={r.id} className={r.retired ? 'row-retired' : ''}>
                   <td>
                     <RiderInfo
                       shirt={r.team_shirt}

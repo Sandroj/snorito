@@ -24,7 +24,7 @@ export const RiderInfo = memo(function RiderInfo({
         <div className="rider-cell-name">
           <span className="flag">{flag(nationality)}</span>
           <span className="nm">{name}{extra}</span>
-          {retired && <span className="chip chip-grijs" title="Uitgevallen">UIT</span>}
+          {retired && <span className="chip chip-grijs">uitgevallen</span>}
           {type && <span className={typeChipClass(type)}>{type}</span>}
         </div>
         <div className="rider-cell-team">{team}</div>

@@ -540,11 +540,6 @@ table.daguitslag tr.swap-in { background: #F0FDF4; }
 
 /* ============ Stage Accordion ============ */
 .stage-accordion { margin-top: 12px; }
-.previous-stages .previous-list { max-height: 400px; overflow-y: auto; }
-.previous-list .prev-item {
-  padding: 8px 12px;
-  border-top: 1px solid #e5e7eb;
-  cursor: pointer;
-  font-size: 0.9em;
-}
-.previous-list .prev-item:hover { background: #f3f4f6; }
+
+/* Uitgevallen renner in een teamlijst: gedimd, zoals op Opstelling. */
+.row-retired { opacity: .4; }

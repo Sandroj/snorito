@@ -50,7 +50,9 @@ export default function Team() {
   }, [selectedRiders]);
 
   const canAdd = (r: Rider) => {
-    if (!r.available) return false;
+    // available === false betekent uitgevallen; ontbreekt de flag (oude cache),
+    // dan behandelen we de renner als gewoon beschikbaar.
+    if (r.available === false) return false;
     if (selected.size >= TEAM_SIZE) return false;
     if ((perTeamCount[r.team_id] || 0) >= MAX_PER_TEAM) return false;
     if (r.price > remaining - reserveNeeded) return false;
@@ -102,9 +104,10 @@ export default function Team() {
 
   const RiderRow = ({ r }: { r: Rider }) => {
     const isSel = selected.has(r.id);
+    const out = r.available === false;
     const disabled = !isSel && !canAdd(r);
     const disableReason = isSel ? null :
-      !r.available ? 'niet meer beschikbaar' :
+      out ? 'uitgevallen' :
       selected.size >= TEAM_SIZE ? 'team is vol' :
       (perTeamCount[r.team_id] || 0) >= MAX_PER_TEAM ? 'max. 4 per ploeg bereikt' :
       r.price > remaining - reserveNeeded ? 'onvoldoende budget' :
@@ -119,7 +122,7 @@ export default function Team() {
     return (
       <div className={`rider-item ${isSel ? 'selected' : ''}`}>
         <div
-          className={`rider-row ${disabled && !locked && !isOpen ? 'disabled' : ''}`}
+          className={`rider-row ${out || (disabled && !locked && !isOpen) ? 'disabled' : ''}`}
           onClick={() => setExpandedId(isOpen ? null : r.id)}
         >
           <Shirt url={r.team_shirt} size={30} />
@@ -128,7 +131,7 @@ export default function Team() {
               <span className="flag">{flag(r.nationality)}</span>
               <span className="name">{r.name}</span>
               <span className={typeChipClass(r.type)}>{r.type}</span>
-              {!r.available && <span className="chip chip-grijs" style={{ fontSize: '10px' }}>Niet beschikbaar</span>}
+              {out && <span className="chip chip-grijs">uitgevallen</span>}
             </div>
             <div className="quals">
               {quals.slice(0, 2).map(([k, v]) => <QualityTag key={k} name={k} value={v} />)}

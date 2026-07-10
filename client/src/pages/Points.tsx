@@ -1,45 +1,22 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { useSession } from '../App';
-import { Daguitslag, StageDetail } from '../components/Daguitslag';
 import { StageAccordion } from '../components/StageAccordion';
 
 interface StageScore { stageNr: number; points: number; }
 
-// "Uitslagen" — je eigen scores per etappe, uitklapbaar met de volledige
-// daguitslag, je opstelling en de misgelopen punten (dezelfde weergave als
-// onder een deelnemer in het klassement, maar dan voor jezelf en zonder team).
+// "Uitslagen" — je eigen scores per etappe. De laatste etappe staat altijd
+// volledig uitgeklapt; eerdere etappes kies je via de dropdown erboven
+// (dezelfde weergave als onder een deelnemer in het klassement).
 export default function Points() {
   const { user } = useSession();
   const [scores, setScores] = useState<StageScore[]>([]);
-  const [openStage, setOpenStage] = useState<number | null>(null);
-  const [detail, setDetail] = useState<StageDetail | null>(null);
 
   useEffect(() => {
-    api('/api/my/points').then((r) => {
-      setScores(r.scores);
-      // Laatste etappe (hoogste nr) meteen uitklappen bij het openen.
-      const last = r.scores.filter((s: StageScore) => s.stageNr > 0).sort((a: StageScore, b: StageScore) => b.stageNr - a.stageNr)[0];
-      if (last) setOpenStage(last.stageNr);
-    });
+    api('/api/my/points').then((r) => setScores(r.scores));
   }, []);
 
-  useEffect(() => {
-    if (openStage == null || !user) return;
-    setDetail(null);
-    api(`/api/participants/${user.id}/points/${openStage}`).then(setDetail);
-  }, [openStage, user]);
-
   const total = scores.reduce((s, x) => s + x.points, 0);
-
-  const stagesData = useMemo(() =>
-    scores.map(s => ({
-      stageNr: s.stageNr,
-      points: s.points,
-      label: s.stageNr === 0 ? 'Eindklassement' : `Etappe ${s.stageNr}`
-    })),
-    [scores]
-  );
 
   return (
     <div className="fade-in">
@@ -60,14 +37,15 @@ export default function Points() {
         </div>
       )}
 
-      {scores.length > 0 && (
+      {scores.length > 0 && user && (
         <StageAccordion
-          stages={stagesData}
-          onStageOpen={(nr) => setOpenStage(nr)}
-          isLoading={openStage != null && detail == null}
-        >
-          {detail && <Daguitslag d={detail} />}
-        </StageAccordion>
+          userId={user.id}
+          stages={scores.map((s) => ({
+            stageNr: s.stageNr,
+            points: s.points,
+            label: s.stageNr === 0 ? 'Eindklassement' : `Etappe ${s.stageNr}`,
+          }))}
+        />
       )}
     </div>
   );
