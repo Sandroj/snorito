@@ -645,13 +645,15 @@ app.get('/api/ranking', ah(async (req, res) => {
 
   const rows = await all(`
     SELECT u.id, u.name, u.created_at,
-      COALESCE((SELECT SUM(points) FROM user_scores s WHERE s.user_id = u.id), 0) AS total,
-      COALESCE((SELECT points FROM user_scores s WHERE s.user_id = u.id AND s.stage_nr = ?), 0) AS last_stage,
-      COALESCE((SELECT points FROM user_scores s WHERE s.user_id = u.id AND s.stage_nr = 0), 0) AS final_points,
-      COALESCE((SELECT SUM(points) FROM user_scores s WHERE s.user_id = u.id AND s.stage_nr > 0), 0) AS stage_points,
-      COALESCE((SELECT SUM(optimal_points) FROM user_scores s WHERE s.user_id = u.id AND s.stage_nr > 0), 0) AS optimal_points
+      COALESCE(SUM(s.points), 0) as total,
+      COALESCE(SUM(CASE WHEN s.stage_nr = ? THEN s.points ELSE 0 END), 0) as last_stage,
+      COALESCE(SUM(CASE WHEN s.stage_nr = 0 THEN s.points ELSE 0 END), 0) as final_points,
+      COALESCE(SUM(CASE WHEN s.stage_nr > 0 THEN s.points ELSE 0 END), 0) as stage_points,
+      COALESCE(SUM(CASE WHEN s.stage_nr > 0 THEN s.optimal_points ELSE 0 END), 0) as optimal_points
     FROM users u
+    LEFT JOIN user_scores s ON u.id = s.user_id
     WHERE 1=1 ${userFilter}
+    GROUP BY u.id, u.name, u.created_at
     ORDER BY total DESC, u.created_at ASC
   `, [lastFinished, ...params]);
 

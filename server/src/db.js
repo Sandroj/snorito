@@ -225,6 +225,9 @@ export async function initSchema() {
   await pool.query('ALTER TABLE riders ADD COLUMN IF NOT EXISTS bib INTEGER');
   // Migratie voor "Raak gekozen?": optimale etappescore (beste opstelling + kopman).
   await pool.query('ALTER TABLE user_scores ADD COLUMN IF NOT EXISTS optimal_points INTEGER');
+  // Performance indexes voor klassement-query
+  await pool.query('CREATE INDEX IF NOT EXISTS idx_user_scores_user_stage ON user_scores(user_id, stage_nr)');
+  await pool.query('CREATE INDEX IF NOT EXISTS idx_pool_members_pool_user ON pool_members(pool_id, user_id)');
 }
 
 export const BUDGET = 45_000_000;
