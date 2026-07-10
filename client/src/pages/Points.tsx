@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../api';
 import { useSession } from '../App';
 import { Daguitslag, StageDetail } from '../components/Daguitslag';
+import { StageAccordion } from '../components/StageAccordion';
 
 interface StageScore { stageNr: number; points: number; }
 
@@ -30,7 +31,6 @@ export default function Points() {
   }, [openStage, user]);
 
   const total = scores.reduce((s, x) => s + x.points, 0);
-  const label = (nr: number) => (nr === 0 ? 'Eindklassement' : `Etappe ${nr}`);
 
   return (
     <div className="fade-in">
@@ -51,15 +51,19 @@ export default function Points() {
         </div>
       )}
 
-      {scores.map((s) => (
-        <div key={s.stageNr} className="card">
-          <div className="acc-head" onClick={() => setOpenStage(openStage === s.stageNr ? null : s.stageNr)}>
-            <b>{label(s.stageNr)}</b>
-            <span className="pts">{s.points} pt</span>
-          </div>
-          {openStage === s.stageNr && (detail ? <Daguitslag d={detail} /> : <div className="muted" style={{ margin: '10px 2px' }}>Laden…</div>)}
-        </div>
-      ))}
+      {scores.length > 0 && (
+        <StageAccordion
+          stages={scores.map(s => ({
+            stageNr: s.stageNr,
+            points: s.points,
+            label: s.stageNr === 0 ? 'Eindklassement' : `Etappe ${s.stageNr}`
+          }))}
+          onStageOpen={(nr) => setOpenStage(nr)}
+          isLoading={openStage != null && detail == null}
+        >
+          {detail && <Daguitslag d={detail} />}
+        </StageAccordion>
+      )}
     </div>
   );
 }
