@@ -11,6 +11,26 @@ dus terughoudend met refactors op koersdagen. Deploy = commit + push naar `main`
 
 ## Laatst gedaan (2026-07-10)
 
+### Sessie 4 — Herstel na feedback Max (d29e725)
+- **Witte pagina gefixt:** deelnemer-detail in Klassement crashte door een
+  `useMemo` ná een early return (Rules of Hooks — geïntroduceerd door een
+  subagent in sessie 3, brak productie). Hooks weggehaald.
+- **StageAccordion herbouwd:** dropdown "Eerdere etappes bekijken…" stáát nu
+  boven de laatste etappe; laatste etappe altijd volledig uitgeklapt; een
+  gekozen eerdere etappe klapt volledig uit tussen dropdown en laatste etappe.
+  Component haalt de daguitslag-details nu zelf op (met cache per etappe) —
+  Points.tsx en Ranking.tsx zijn daardoor flink versimpeld.
+- **Uitgevallen renners in Opstelling-stijl:** gedimde rij (`opacity .4`) +
+  chip "uitgevallen" in teamselectie (niet toevoegbaar, wel verwijderbaar) én
+  in de teamlijst van deelnemers onder Klassement (`.row-retired`).
+- **Verificatie-aanpak (nieuw, aanrader):** stub-API in scratchpad die
+  `client/dist` serveert met nepdata + preview-browser — hele flow
+  (klassement → deelnemer → detail, dropdown, teamselectie, uitslagen) echt
+  getest vóór push. Views zitten live achter login, dus dit is de manier.
+- **Les:** UI-refactors van subagents niet alleen op build/spec reviewen maar
+  de flow ook echt renderen — de hooks-crash kwam door drie subagent-reviews
+  heen.
+
 ### Sessie 3 — Vier Features + Snelheidsoptimalisatie (compleet)
 
 **Deel 1: Uitgevallen Renners** (4 tasks)
