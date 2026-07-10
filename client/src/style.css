@@ -537,3 +537,14 @@ table.daguitslag tr.swap-in { background: #F0FDF4; }
   .app { padding-bottom: 120px; }
   h1 { font-size: 26px; }
 }
+
+/* ============ Stage Accordion ============ */
+.stage-accordion { margin-top: 12px; }
+.previous-stages .previous-list { max-height: 400px; overflow-y: auto; }
+.previous-list .prev-item {
+  padding: 8px 12px;
+  border-top: 1px solid #e5e7eb;
+  cursor: pointer;
+  font-size: 0.9em;
+}
+.previous-list .prev-item:hover { background: #f3f4f6; }
