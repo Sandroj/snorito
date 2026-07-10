@@ -50,7 +50,7 @@ interface RankRow {
 
 interface Pool { id: number; name: string; }
 
-interface TeamRider { id: number; name: string; price: number; type: string; team_name: string; nationality: string; team_shirt: string | null; }
+interface TeamRider { id: number; name: string; price: number; type: string; team_name: string; nationality: string; team_shirt: string | null; retired?: boolean; }
 interface Participant {
   userId: number;
   name: string;
@@ -120,6 +120,7 @@ function ParticipantDetail({ userId, onBack }: { userId: number; onBack: () => v
                       name={r.name}
                       type={r.type}
                       team={r.team_name}
+                      retired={r.retired}
                     />
                   </td>
                   <td className="num">{euroShort(r.price)}</td>

@@ -6,7 +6,7 @@ import { Shirt } from './Quality';
 // type-chip + ploegnaam), maar zonder de kwaliteiten. Gebruikt in het
 // klassement: de teamlijst en de puntenuitsplitsing per etappe.
 export function RiderInfo({
-  shirt, nationality, name, type, team, extra,
+  shirt, nationality, name, type, team, extra, retired,
 }: {
   shirt: string | null;
   nationality: string;
@@ -14,6 +14,7 @@ export function RiderInfo({
   type?: string;
   team: string;
   extra?: ReactNode;
+  retired?: boolean;
 }) {
   return (
     <div className="rider-cell">
@@ -22,6 +23,7 @@ export function RiderInfo({
         <div className="rider-cell-name">
           <span className="flag">{flag(nationality)}</span>
           <span className="nm">{name}{extra}</span>
+          {retired && <span className="chip chip-grijs" title="Uitgevallen">UIT</span>}
           {type && <span className={typeChipClass(type)}>{type}</span>}
         </div>
         <div className="rider-cell-team">{team}</div>
