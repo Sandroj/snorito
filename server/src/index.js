@@ -28,6 +28,18 @@ const app = express();
 app.set('trust proxy', 1);
 app.use(compression());
 
+// Request timing middleware for performance debugging
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const ms = Date.now() - start;
+    if (ms > 100) { // Only log slow requests (>100ms)
+      console.log(`${req.method} ${req.path} ${ms}ms`);
+    }
+  });
+  next();
+});
+
 // Basis-security-headers: niet in frames laden (clickjacking), geen MIME-sniffing,
 // geen referrer naar externe sites, en in productie HTTPS afdwingen (HSTS).
 // Bewust geen Content-Security-Policy: die kan de Vite/PWA-bundel breken en
