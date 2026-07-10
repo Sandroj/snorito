@@ -10,6 +10,18 @@ dus terughoudend met refactors op koersdagen. Deploy = commit + push naar `main`
 (Render bouwt en rolt automatisch uit; geen staging).
 
 ## Laatst gedaan (2026-07-10)
+
+### Sessie 2 — Database Indexering
+- **Hot query paths indexing:** Vier aanvullende indexes toegevoegd in db.js:
+  - `idx_stage_results_stage` op stage_results(stage_nr) — klassement-lookups
+  - `idx_pool_members_pool` op pool_members(pool_id) — pool-ranking queries
+  - `idx_riders_team` op riders(team_id) — team-selectie validatie
+  - `idx_riders_available` op riders(last_started_stage) — filter actieve renners
+  - `idx_lineups_user_stage` op lineups(user_id, stage_nr) — gebruiker-per-etappe
+  - Build verifieërd (tsc + vite), commit fb85160
+  - Status: Gereed, geen wijzigingen in logica — puur schema-optimalisatie
+
+### Sessie 1 — Query-optimalisatie
 - **Query-optimalisatie — Klassement-endpoint:** Herschreven `/api/ranking`-query
   van vijf scalar subqueries per gebruiker naar single LEFT JOIN + GROUP BY:
   - In index.js regel 646: vervangen `(SELECT SUM(...) WHERE user_id = u.id)` etc.
