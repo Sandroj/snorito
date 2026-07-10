@@ -10,13 +10,13 @@ dus terughoudend met refactors op koersdagen. Deploy = commit + push naar `main`
 (Render bouwt en rolt automatisch uit; geen staging).
 
 ## Laatst gedaan (2026-07-10)
-- **Task 2 — Retired riders:** Voorkomen dat gepensioneerde renners geselecteerd
-  kunnen worden bij teamselectie. Geïmplementeerd:
-  - Backend: `available` flag op riders API (gebaseerd op `last_started_stage`)
-  - Frontend: canAdd() check, visuele "Niet beschikbaar" badge, dynamische disable-reason
-  - Keuze bewaard: reeds geselecteerde niet-beschikbare renners kunnen verwijderd worden
-  - Geverifieerd: spec compliant, TypeScript clean, commit klopt
-  - Status: LIVE
+- **Task 4 — Client-side display (retired):** Voegt visuele indicator toe voor
+  uitgevallen renners in klassement-deelnemer-details:
+  - RiderInfo.tsx: `retired?: boolean` parameter, conditionaleel "UIT" badge
+  - Ranking.tsx ParticipantDetail: pass `retired` prop aan RiderInfo
+  - TeamRider interface: uitgebreid met `retired?: boolean` veld
+  - Build verifieërd (tsc + vite), commit klopt
+  - Status: Gereed, API-responses bevatten al retired-flag (Task 3 backend)
 
 ## Volgende stap
 1. **Check eerst `git status`** — Max past soms zelf code aan tussen sessies.
