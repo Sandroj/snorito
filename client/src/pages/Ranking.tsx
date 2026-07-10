@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { api, euroShort } from '../api';
 import { RiderInfo } from '../components/RiderInfo';
 import { Daguitslag, StageDetail } from '../components/Daguitslag';
+import { StageAccordion } from '../components/StageAccordion';
 import { CheckIcon } from '../components/Icons';
 
 // Klein (i)-icoontje met uitleg: werkt zowel op hover (desktop) als tik (mobiel),
@@ -94,15 +95,19 @@ function ParticipantDetail({ userId, onBack }: { userId: number; onBack: () => v
       {data.scores.length === 0 && (
         <div className="card empty"><div className="emoji">⏱️</div>Nog geen verwerkte etappes.</div>
       )}
-      {data.scores.map((s) => (
-        <div key={s.stageNr} className="card">
-          <div className="acc-head" onClick={() => setOpenStage(openStage === s.stageNr ? null : s.stageNr)}>
-            <b>{label(s.stageNr)}</b>
-            <span className="pts">{s.points} pt</span>
-          </div>
-          {openStage === s.stageNr && (detail ? <Daguitslag d={detail} /> : <div className="muted" style={{ margin: '10px 2px' }}>Laden…</div>)}
-        </div>
-      ))}
+      {data.scores.length > 0 && (
+        <StageAccordion
+          stages={data.scores.map(s => ({
+            stageNr: s.stageNr,
+            points: s.points,
+            label: label(s.stageNr)
+          }))}
+          onStageOpen={(nr) => setOpenStage(nr)}
+          isLoading={openStage != null && detail == null}
+        >
+          {detail && <Daguitslag d={detail} />}
+        </StageAccordion>
+      )}
 
       <div className="section-label">Team van {data.team.length} renners</div>
       <div className="card">
