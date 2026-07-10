@@ -501,9 +501,10 @@ app.put('/api/team', ah(async (req, res) => {
   const riderIds = [...new Set(req.body?.riderIds || [])];
   if (riderIds.length > TEAM_SIZE) return res.status(400).json({ error: `Maximaal ${TEAM_SIZE} renners` });
 
-  const riders = [];
-  for (const id of riderIds) riders.push(await get('SELECT * FROM riders WHERE id = ?', [id]));
-  if (riders.some((r) => !r)) return res.status(400).json({ error: 'Onbekende renner in selectie' });
+  // Batch query instead of N+1: fetch all riders in one query
+  const ph = riderIds.map(() => '?').join(',');
+  const riders = await all(`SELECT * FROM riders WHERE id IN (${ph})`, riderIds);
+  if (riders.length !== riderIds.length) return res.status(400).json({ error: 'Onbekende renner in selectie' });
 
   const total = riders.reduce((sum, r) => sum + r.price, 0);
   if (total > BUDGET) return res.status(400).json({ error: 'Budget overschreden' });
