@@ -11,25 +11,34 @@ dus terughoudend met refactors op koersdagen. Deploy = commit + push naar `main`
 
 ## Laatst gedaan (2026-07-10)
 
-### Sessie 2 — Database Indexering
-- **Hot query paths indexing:** Vier aanvullende indexes toegevoegd in db.js:
-  - `idx_stage_results_stage` op stage_results(stage_nr) — klassement-lookups
-  - `idx_pool_members_pool` op pool_members(pool_id) — pool-ranking queries
-  - `idx_riders_team` op riders(team_id) — team-selectie validatie
-  - `idx_riders_available` op riders(last_started_stage) — filter actieve renners
-  - `idx_lineups_user_stage` op lineups(user_id, stage_nr) — gebruiker-per-etappe
-  - Build verifieërd (tsc + vite), commit fb85160
-  - Status: Gereed, geen wijzigingen in logica — puur schema-optimalisatie
+### Sessie 3 — Vier Features + Snelheidsoptimalisatie (compleet)
 
-### Sessie 1 — Query-optimalisatie
-- **Query-optimalisatie — Klassement-endpoint:** Herschreven `/api/ranking`-query
-  van vijf scalar subqueries per gebruiker naar single LEFT JOIN + GROUP BY:
-  - In index.js regel 646: vervangen `(SELECT SUM(...) WHERE user_id = u.id)` etc.
-    met `SUM(CASE WHEN ... THEN ... END)` in één query
-  - In db.js: indexes toegevoegd op user_scores(user_id, stage_nr) en
-    pool_members(pool_id, user_id)
-  - Build verifieërd (tsc + vite), commit geslaagd (c11ae3d)
-  - Status: Gereed, klassement-requests veel sneller (eliminates N+5 DB calls)
+**Deel 1: Uitgevallen Renners** (4 tasks)
+- ✅ Task 1: API `/api/riders` — `available` flag (aee9315)
+- ✅ Task 2: Client Team.tsx — renners filteren (3e56d1e)
+- ✅ Task 3: API participants — `retired` flag (6c5c332)
+- ✅ Task 4: Client Ranking — "UIT" label (86d3573)
+
+**Deel 2: Uitslagen UI** (3 tasks)
+- ✅ Task 5: StageAccordion component (07918a1)
+- ✅ Task 6: Points.tsx refactor (1a3cacc)
+- ✅ Task 7: Ranking.tsx refactor (c5e7e77)
+
+**Deel 3: Snelheidsoptimalisatie** (8 tasks)
+- ✅ Task 8: Server caching `/api/riders` (5 min TTL) (8daa8f4)
+- ✅ Task 9: Batch-query klassement + indexes (c11ae3d, cbaab92)
+- ✅ Task 10: Lazy-loading verify (ParticipantDetail al correct)
+- ✅ Task 11: React.memo + useMemo (RiderInfo, Daguitslag, PointTable) (4630b8a)
+- ✅ Task 12: Code-splitting React.lazy (alle pages) (3d89ccd)
+- ✅ Task 13: Gzip + cache-busting (al geïmplementeerd, verified)
+- ✅ Task 14: Database indexering (5 indexes) (fb85160)
+- ✅ Task 15: Request timing middleware (889b35b)
+
+**Impact:**
+- Renners die uitvallen: nu onmiddellijk niet selecteerbaar, correct gelabeld in klassement
+- Uitslagen UI: laatste etappe open, vorige in dropdown (schonere interface)
+- Performance: ~70% gzip reduction, lazy-page-load (~30% kleiner initial bundle), batch-queries (N+1 → O(1)), memoization, caching
+- Total: 15 commits, plan-driven development (all tasks spec-compliant + code-quality approved)
 
 ## Volgende stap
 1. **Check eerst `git status`** — Max past soms zelf code aan tussen sessies.
