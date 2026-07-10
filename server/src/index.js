@@ -380,7 +380,7 @@ app.get('/api/me', ah(async (req, res) => {
 // Basisdata is voor iedereen gelijk en verandert alleen bij imports of
 // admin-wijzigingen — servercache (zie cache.js) scheelt Neon-roundtrips.
 app.get('/api/riders', ah(async (_req, res) => {
-  const riders = await cached('riders', 30_000, async () => {
+  const riders = await cached('riders', 5 * 60 * 1000, async () => {
     // Bepaal huige etappe: laatst gestarte (status != 'open')
     const currentStageRow = await get("SELECT MAX(nr) as max FROM stages WHERE status != ?", ['open']);
     const currentStage = currentStageRow?.max || 999; // 999 = geen etappe gestart
@@ -395,6 +395,7 @@ app.get('/api/riders', ah(async (_req, res) => {
       available: r.last_started_stage === null || r.last_started_stage >= currentStage
     }));
   });
+  res.set('Cache-Control', 'public, max-age=300'); // 5 min aggressive caching
   res.json({ riders, budget: BUDGET, teamSize: TEAM_SIZE, maxPerTeam: MAX_PER_CYCLING_TEAM });
 }));
 
