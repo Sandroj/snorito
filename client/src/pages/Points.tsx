@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react';
-import { api } from '../api';
+import { useLiveApi } from '../api';
 import { useSession } from '../App';
 import { StageAccordion } from '../components/StageAccordion';
 
@@ -10,11 +9,7 @@ interface StageScore { stageNr: number; points: number; }
 // (dezelfde weergave als onder een deelnemer in het klassement).
 export default function Points() {
   const { user } = useSession();
-  const [scores, setScores] = useState<StageScore[]>([]);
-
-  useEffect(() => {
-    api('/api/my/points').then((r) => setScores(r.scores));
-  }, []);
+  const scores = useLiveApi<{ scores: StageScore[] }>('/api/my/points')?.scores ?? [];
 
   const total = scores.reduce((s, x) => s + x.points, 0);
 

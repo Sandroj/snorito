@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { api } from '../api';
+import { api, useLiveApi } from '../api';
 import { Daguitslag, StageDetail } from './Daguitslag';
 
 export interface AccordionStage {
@@ -21,15 +21,19 @@ export function StageAccordion({ stages, userId }: { stages: AccordionStage[]; u
   const latest = sorted[0];
   const previous = sorted.slice(1);
 
+  // Laatste etappe kan nog worden herberekend terwijl deze pagina open staat
+  // (live sync) — ververst daarom ook bij terugkeer naar het tabblad.
+  const latestDetail = useLiveApi<StageDetail>(latest ? `/api/participants/${userId}/points/${latest.stageNr}` : null);
+
   useEffect(() => {
-    // Nieuwe deelnemer of nieuwe laatste etappe: cache leegmaken en laatste laden.
+    // Nieuwe deelnemer of nieuwe laatste etappe: cache van eerdere etappes leegmaken.
     setDetails({});
     setPrevOpen(null);
-    if (!latest) return;
-    api(`/api/participants/${userId}/points/${latest.stageNr}`).then((d) =>
-      setDetails({ [latest.stageNr]: d })
-    );
   }, [userId, latest?.stageNr]);
+
+  useEffect(() => {
+    if (latest && latestDetail) setDetails((cur) => ({ ...cur, [latest.stageNr]: latestDetail }));
+  }, [latest?.stageNr, latestDetail]);
 
   useEffect(() => {
     if (prevOpen == null || details[prevOpen]) return;

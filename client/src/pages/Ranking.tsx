@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { api, euroShort } from '../api';
+import { api, useLiveApi, euroShort } from '../api';
 import { RiderInfo } from '../components/RiderInfo';
 import { StageAccordion } from '../components/StageAccordion';
 import { CheckIcon } from '../components/Icons';
@@ -63,11 +63,7 @@ interface Participant {
 // puntenuitsplitsing) en het team van 20. Opstellingen van nog niet gestarte
 // etappes geeft de server bewust niet terug.
 function ParticipantDetail({ userId, onBack }: { userId: number; onBack: () => void }) {
-  const [data, setData] = useState<Participant | null>(null);
-
-  useEffect(() => {
-    api(`/api/participants/${userId}`).then(setData);
-  }, [userId]);
+  const data = useLiveApi<Participant>(`/api/participants/${userId}`);
 
   if (!data) return <div className="center" style={{ margin: 40, color: '#667085' }}>Laden…</div>;
 
@@ -144,14 +140,14 @@ export default function Ranking() {
     api('/api/pools').then((p) => setPools(p.pools));
   }, []);
 
+  const rankingPath = `/api/ranking${poolId === 'all' ? '' : `?poolId=${poolId}`}`;
+  const ranking = useLiveApi<{ ranking: RankRow[]; lastFinishedStage: number | null; nextStageNr: number | null }>(rankingPath);
   useEffect(() => {
-    const q = poolId === 'all' ? '' : `?poolId=${poolId}`;
-    api(`/api/ranking${q}`).then((r) => {
-      setRows(r.ranking);
-      setLastStage(r.lastFinishedStage);
-      setNextStage(r.nextStageNr ?? null);
-    });
-  }, [poolId]);
+    if (!ranking) return;
+    setRows(ranking.ranking);
+    setLastStage(ranking.lastFinishedStage);
+    setNextStage(ranking.nextStageNr ?? null);
+  }, [ranking]);
 
   if (selected != null) {
     return <ParticipantDetail userId={selected} onBack={() => setSelected(null)} />;

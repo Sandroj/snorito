@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react';
+
 export interface Rider {
   id: number;
   name: string;
@@ -71,6 +73,30 @@ export async function api<T = any>(path: string, options?: RequestInit & { json?
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `Fout (${res.status})`);
   return data as T;
+}
+
+// Haalt data op en herhaalt dat zodra het tabblad weer zichtbaar wordt. Zonder
+// dit blijft een pagina die tijdens een lopende etappe open staat de punten
+// van het moment van laden tonen, ook als de server intussen (via de
+// letour-sync) al een bijgewerkte, correcte stand heeft berekend.
+export function useLiveApi<T = any>(path: string | null): T | null {
+  const [data, setData] = useState<T | null>(null);
+  useEffect(() => {
+    setData(null);
+    if (!path) return;
+    let cancelled = false;
+    const load = () => api<T>(path).then((d) => { if (!cancelled) setData(d); });
+    load();
+    const onVisible = () => { if (document.visibilityState === 'visible') load(); };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onVisible);
+    return () => {
+      cancelled = true;
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onVisible);
+    };
+  }, [path]);
+  return data;
 }
 
 // Cache voor basisdata (renners, ploegen, etappes, regels): gelijk voor
