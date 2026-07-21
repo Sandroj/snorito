@@ -292,7 +292,13 @@ tr.me td:first-child { box-shadow: inset 3px 0 0 var(--geel); }
 .stage-nr span { font-size: 8.5px; text-transform: uppercase; letter-spacing: 1px; color: #98A2B3; }
 .stage-route { font-weight: 750; font-size: 15.5px; }
 .stage-meta { display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
-.stage-profile { background: #fff; padding: 4px 10px 0; }
+/* De profielafbeeldingen van Scorito hebben een transparante achtergrond en
+   zetten de colnamen en hoogtes (COL DU TOURMALET, 2115 m) in WITTE tekst met
+   witte verbindingslijnen naar het profiel. Op een witte achtergrond is die
+   informatie dus volledig onzichtbaar. Donkere achtergrond maakt ze zichtbaar;
+   de zwarte tekst in de afbeelding staat op eigen witte plaatjes en blijft
+   daardoor leesbaar. */
+.stage-profile { background: linear-gradient(130deg, var(--navy), #1D2A44); padding: 10px 10px 6px; }
 .stage-profile img { width: 100%; display: block; border-radius: 8px; }
 .stage-desc { padding: 10px 16px 14px; font-size: 13.5px; color: #344054; line-height: 1.55; }
 .stage-deadline {
