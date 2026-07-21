@@ -210,9 +210,20 @@ De app heet **Snorito** (mapnaam is nog "scorita").
   servercode en database zijn dus níet de bottleneck. Ga bij "de site is
   traag" dus niet eerst code optimaliseren: meet met
   `curl -w "%{time_starttransfer} %{time_appconnect}"` op `/healthz` en trek
-  af. Verplaatsen naar Frankfurt is de grootste denkbare winst, maar vereist
-  een nieuwe service (regio is niet wijzigbaar) én dat de **Neon-database ook
-  in de EU** staat — anders verschuift de latency naar de DB-verbinding.
+  af. **De Neon-database staat al wél in Frankfurt** (host eindigt op
+  `eu-central-1.aws.neon.tech`), dus elke query steekt nu de oceaan over:
+  gemeten **~145 ms per query** bovenop de ~175 ms van de gebruiker. Een
+  endpoint met vier opeenvolgende query's zit daardoor op driekwart seconde.
+  Let op: publieke endpoints als `/api/riders` hebben servercache en raken de
+  database niet — meet dus met een ongecachet endpoint zoals
+  `/api/rider/1/results`, anders lijkt alles ten onrechte even snel.
+  Verhuizen naar Frankfurt is de grootste winst; stappenplan staat in
+  `docs/regio-migratie-frankfurt.md`. **Schrijf nieuwe endpoints met
+  `Promise.all` in plaats van opeenvolgende `await`s** — zolang de app in
+  Oregon staat kost elke extra query ~145 ms.
+- **`DISABLE_SYNC=1`** zet de in-process uitslagensync uit (herinneringsmails
+  blijven draaien). Nodig als er twee instanties tegen dezelfde database
+  draaien, en bruikbaar als noodrem tijdens een koersdag.
 - **Puntenmotor:** `server/src/points.js` (tabellen bovenaan). Teamregels:
   constants in `server/src/db.js`. Spelregelpagina leest live uit
   `GET /api/rules`, dus UI en berekening kunnen niet uiteenlopen.

@@ -89,9 +89,25 @@ het doel.
 Niet gedaan (bewust): `parseTeamRanking` gebruikt nog cheerio — die draait
 alleen bij een ploegentijdrit (etappe 1, al geweest), dus niet de moeite.
 
+**Aanvulling op de regiobevinding (belangrijker dan eerst gedacht):** de
+Neon-database staat blijkens de host (`...eu-central-1.aws.neon.tech`) al in
+**Frankfurt**, terwijl de app in Oregon draait. Elke query steekt dus de oceaan
+over. Gemeten: `/api/rider/1/results` (3 opeenvolgende query's, geen cache)
+kost **615-1123 ms** tegenover ~200 ms voor `/healthz` — dat is **~145 ms per
+databasequery** bovenop de ~175 ms van de gebruiker naar Oregon. De eerder
+gemeten "alles is even snel"-uitkomst kwam doordat de publieke endpoints
+servercache hebben en de database niet raken; de pagina's achter login wél.
+
+Er is dus géén afweging: app en database horen allebei in Frankfurt. Het
+volledige verhuisplan (stappen, wat er breekt, terugvalplan, urenbudget) staat
+in **`docs/regio-migratie-frankfurt.md`**. Nieuw hulpmiddel daarvoor:
+**`DISABLE_SYNC=1`** zet de in-process sync uit, zodat er tijdens de overlap
+niet twee instanties dezelfde etappe importeren.
+
 **Volgende stap:** review + commit + push (of vraag Max eerst). Verifieer na
-push met `git log`/live bundel-hash zoals gebruikelijk. Daarna de regiovraag
-hierboven met Max bespreken — dat is de grootste resterende winst.
+push met `git log`/live bundel-hash zoals gebruikelijk. Daarna de verhuizing
+volgens `docs/regio-migratie-frankfurt.md` — dat is veruit de grootste
+resterende snelheidswinst.
 
 ## Laatst gedaan (2026-07-10)
 
