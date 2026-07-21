@@ -107,14 +107,35 @@ serverrondes** — `Promise.all` in plaats van opeenvolgende `await`s.
 Wel opgeleverd: **`DISABLE_SYNC=1`** zet de in-process sync uit (herinnerings-
 mails blijven draaien). Bedoeld als noodrem tijdens een koersdag.
 
-**Volgende stap:** alles van deze sessie staat live (gepusht 21 juli). Kandidaten
-voor vervolg, in volgorde van verwachte winst:
-1. `stageDaguitslag` (`server/src/index.js`) doet nog opeenvolgende query's —
-   met `Promise.all` valt daar naar schatting enkele honderden ms te winnen op
-   de uitslagenpagina.
-2. `/api/ranking` en `/api/my/points` op hetzelfde punt nalopen.
-3. De spelregel "eindklassement pas na ≥11 etappes" wordt nog niet in code
+### Uitslagenpagina: acht rondes → twee golven (a92c1d4, live 21 juli 12:24)
+`stageDaguitslag` deed **acht opeenvolgende query's** (negen bij een TTT). Nu
+twee golven: eerst de vier onafhankelijke query's tegelijk, daarna renners en
+punten in één keer voor team én opstelling samen (unie van beide id-lijsten,
+zodat een afwijkende admin-opstelling niets kwijtraakt). De ploeg van een
+renner komt uit dezelfde rij, waardoor de aparte TTT-query vervalt.
+`pointsBreakdown` kreeg dezelfde behandeling (4 → 2 golven).
+
+Gemeten met een nagebootste database op 145 ms per query: **1174 → 298 ms**
+(gewone rit) en **1317 → 294 ms** (ploegentijdrit).
+
+**Hoe dit geverifieerd is** (nuttig patroon voor volgende keer): oude en nieuwe
+implementatie naast elkaar gezet in een wegwerp-script met een nepdatabase, en
+de JSON-uitvoer vergeleken over zeven scenario's — rit, ploegentijdrit, geen
+opstelling, leeg team, geen uitslag, geen punten, en een opgestelde renner die
+niet in het team zit. Alle zeven identiek.
+
+**Wat níet geverifieerd kon worden:** de ingelogde route zelf end-to-end. Er is
+lokaal geen Postgres en Neon zit achter de sandbox, dus de echte SQL is alleen
+tegen het schema in `db.js` nagelopen (`riders.team_id` bestaat en werd al in de
+JOIN gebruikt; geen aliasbotsing). Bij twijfel: `git revert a92c1d4 && git push`
+zet de oude versie in enkele minuten terug.
+
+**Volgende stap:** alles van deze sessie staat live. Kandidaten voor vervolg:
+1. `/api/ranking` op hetzelfde punt nalopen (nog niet bekeken).
+2. De spelregel "eindklassement pas na ≥11 etappes" wordt niet in code
    afgedwongen.
+3. De automatische uitvaldetectie krijgt zijn eerste echte test bij etappe 16
+   (21 juli 13:00) — controleer daarna of er terecht renners zijn gemarkeerd.
 
 ## Laatst gedaan (2026-07-10)
 
