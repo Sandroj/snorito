@@ -15,21 +15,65 @@ export const TEAM_ALIASES = {
 // Individueel klassementsfragment (ite/itg/ipg/img/ijg): positie + rugnummer.
 // Bij puntenklassementen (ipg/img) staat het puntentotaal in een cel als
 // "12 PTS"; bij tijdklassementen ontbreekt zo'n cel en blijft points null.
+//
+// Bewust géén cheerio.load() hier. Een klassementsfragment is ~610 KB voor
+// ~166 rijen (bijna alles opmaak, renderfoto's en witruimte); een volledige
+// DOM opbouwen kostte daarvan het leeuwendeel. Op de 0,1-vCPU van de Render
+// free tier blokkeert dat de event loop merkbaar — juist tijdens een etappe,
+// wanneer de sync elke 2 minuten draait en iedereen zit te verversen. We
+// scannen daarom alleen de drie velden die we nodig hebben. De test
+// vergelijkt de uitkomst 1-op-1 met de cheerio-implementatie.
+const TAGS = /<[^>]*>/g;
+const ENTITIES = { '&nbsp;': ' ', '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"', '&#39;': "'" };
+const cellText = (html) => html
+  .replace(TAGS, '')
+  .replace(/&[a-z#0-9]+;/gi, (e) => ENTITIES[e.toLowerCase()] ?? e)
+  .trim();
+
+// Class-attribuut van een openingstag bevat het losse woord `token`.
+function hasClass(tag, token) {
+  const m = /\sclass\s*=\s*"([^"]*)"/i.exec(tag);
+  return !!m && m[1].split(/\s+/).includes(token);
+}
+
 export function parseRiderRanking(html) {
   if (!html) return [];
-  const $ = cheerio.load(html);
   const rows = [];
-  $('tr.rankingTables__row').each((_, tr) => {
-    const $tr = $(tr);
-    const position = parseInt($tr.find('.rankingTables__row__position span').first().text().trim(), 10);
-    const bib = parseInt(($tr.find('[data-bib]').first().attr('data-bib') || '').replace('#', ''), 10);
+  const trRe = /<tr\b[^>]*>/gi;
+  const matches = [...html.matchAll(trRe)];
+
+  for (let i = 0; i < matches.length; i++) {
+    const tag = matches[i][0];
+    if (!hasClass(tag, 'rankingTables__row')) continue;
+    // Rijinhoud loopt tot de volgende <tr> (of het einde van het fragment).
+    const start = matches[i].index + tag.length;
+    const body = html.slice(start, i + 1 < matches.length ? matches[i + 1].index : html.length);
+
+    // Positie: eerste <span> binnen de cel met class rankingTables__row__position.
+    let position = NaN;
+    const posCell = /<t[dh]\b[^>]*>/gi;
+    let cell;
+    while ((cell = posCell.exec(body))) {
+      if (!hasClass(cell[0], 'rankingTables__row__position')) continue;
+      const rest = body.slice(cell.index + cell[0].length);
+      const span = /<span\b[^>]*>([\s\S]*?)<\/span>/i.exec(rest);
+      if (span) position = parseInt(cellText(span[1]), 10);
+      break;
+    }
+
+    const bibM = /\sdata-bib\s*=\s*"([^"]*)"/i.exec(body);
+    const bib = parseInt((bibM ? bibM[1] : '').replace('#', ''), 10);
+
+    // Punten: laatste cel die exact "12 PTS" bevat (zoals de cheerio-versie,
+    // die bij meerdere treffers de laatste liet winnen).
     let points = null;
-    $tr.find('td').each((_, td) => {
-      const m = $(td).text().trim().match(/^(\d+)\s*PTS?$/i);
+    for (const td of body.matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/gi)) {
+      const m = cellText(td[1]).match(/^(\d+)\s*PTS?$/i);
       if (m) points = parseInt(m[1], 10);
-    });
+    }
+
     if (Number.isInteger(position) && position >= 1 && Number.isInteger(bib)) rows.push({ position, bib, points });
-  });
+  }
   return rows;
 }
 
@@ -41,6 +85,22 @@ export function parseRiderRanking(html) {
 // Zie docs/scorito-spelregels.md, sectie "Ploegentijdrit".
 export function filterJerseyPlaceholders(rows, isTTT) {
   return rows.filter((r) => r.points !== 0 || (isTTT && r.position === 1));
+}
+
+// Het algemeen klassement (itg-fragment) bevat het volledige, nog actieve veld
+// (166 van ~184 renners bijv. rond etappe 15) — geen top-N-afkapping. Een
+// renner die er (nog) niet als uitgevallen bijstaat maar niet meer in dit
+// klassement voorkomt, is dus gestopt (DNF/DNS/DSQ). We markeren voorzichtig:
+// alleen als het aantal nieuwe afwezigen plausibel is voor één etappe — een
+// kapotte/onvolledige fetch zou anders in één klap tientallen actieve renners
+// als uitgevallen aanmerken.
+export const MAX_PLAUSIBLE_ABANDONS_PER_SYNC = 10;
+
+// riders: [{ id, bib, last_started_stage }]; presentRiderIds: id's die in het
+// zojuist geïmporteerde algemeen klassement voorkomen.
+export function detectNewAbandons(riders, presentRiderIds) {
+  const present = new Set(presentRiderIds);
+  return riders.filter((r) => r.bib != null && r.last_started_stage == null && !present.has(r.id));
 }
 
 // --- zelf ophalen (server-side sync) -----------------------------------------

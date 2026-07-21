@@ -7,6 +7,7 @@ import { bustCache } from './cache.js';
 import { parseStagePage, parseTttResults, matchByName, matchTeamsByName } from './pcs.js';
 import {
   parseRiderRanking, parseTeamRanking, filterJerseyPlaceholders, fetchLetourFragments, TEAM_ALIASES,
+  detectNewAbandons, MAX_PLAUSIBLE_ABANDONS_PER_SYNC,
 } from './letour.js';
 
 // Etappestarttijden in data/stages_tdf2026.json zijn lokale tijd zonder zone;
@@ -246,13 +247,34 @@ function payloadFromLetour(stage, fragments, riders, teams) {
   return payload;
 }
 
+// Markeert renners die uit het algemeen klassement zijn verdwenen automatisch
+// als uitgevallen (last_started_stage), i.p.v. dat de beheerder dit handmatig
+// moet bijhouden. Alleen renners die nu nog als actief te boek staan worden
+// aangeraakt — een admin-correctie (last_started_stage al gezet) wordt nooit
+// overschreven. Te veel gelijktijdige nieuwe afwezigen wijst op een
+// onvolledige fetch, geen echte uitvalgolf — dan raken we niets aan en komt
+// het als sync-fout in het adminpaneel te staan.
+async function markNewAbandons(riders, payload, stageNr) {
+  const presentIds = payload.classifications.alg.filter(Boolean);
+  const newlyOut = detectNewAbandons(riders, presentIds);
+  if (newlyOut.length === 0) return;
+  if (newlyOut.length > MAX_PLAUSIBLE_ABANDONS_PER_SYNC) {
+    await note(stageNr, `${newlyOut.length} renners tegelijk afwezig in het algemeen klassement — te veel om automatisch te vertrouwen, controleer handmatig`);
+    return;
+  }
+  for (const r of newlyOut) {
+    await run('UPDATE riders SET last_started_stage = ? WHERE id = ?', [stageNr, r.id]);
+  }
+  bustCache();
+}
+
 // Verwerkt de (door de Action aangeleverde) klassementsfragmenten van letour.fr.
 export async function importLetourRankings(stageNr, fragments) {
   const stage = await get('SELECT * FROM stages WHERE nr = ?', [stageNr]);
   if (!stage) throw new Error(`Etappe ${stageNr} bestaat niet`);
   if (stage.result_source === 'manual') return `etappe ${stageNr}: handmatig — overgeslagen`;
 
-  const riders = await all('SELECT id, name, bib FROM riders');
+  const riders = await all('SELECT id, name, bib, last_started_stage FROM riders');
   const teams = await all('SELECT id, name FROM cycling_teams');
 
   try {
@@ -263,11 +285,13 @@ export async function importLetourRankings(stageNr, fragments) {
     }
     if (stage.status === 'finished' && !(await differsFromStored(stage, payload))) {
       await note(stage.nr, null);
+      await markNewAbandons(riders, payload, stage.nr); // ná de note-clear: mag een evt. waarschuwing laten staan
       return `etappe ${stage.nr}: ongewijzigd`;
     }
     await saveStageResult(stage.nr, payload, 'auto');
     await processStage(stage.nr); // idempotent; zet de etappe op 'finished'
     await note(stage.nr, null);
+    await markNewAbandons(riders, payload, stage.nr); // ná de note-clear: mag een evt. waarschuwing laten staan
     return `etappe ${stage.nr}: uitslag geïmporteerd en verwerkt`;
   } catch (e) {
     await note(stage.nr, e.message);
