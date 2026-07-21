@@ -1216,6 +1216,14 @@ if (fs.existsSync(distDir)) {
 // draait halen we uitslagen elke 2 minuten zelf bij letour.fr — zo staan punten
 // kort na de finish in de app in plaats van na een half uur. runSync is een
 // no-op wanneer geen enkele etappe een uitslag nodig heeft.
+//
+// DISABLE_SYNC=1 zet deze loop uit (de opstellingsherinneringen blijven wel
+// draaien). Nodig zodra er even twee instanties tegen dezelfde Neon-database
+// draaien — bijvoorbeeld tijdens een regioverhuizing: dan zou anders elke
+// instantie dezelfde etappe importeren. Ook bruikbaar als noodrem wanneer de
+// sync zich misdraagt tijdens een koersdag.
+const syncEnabled = process.env.DISABLE_SYNC !== '1';
+if (!syncEnabled) console.log('interval-sync: uitgeschakeld via DISABLE_SYNC=1');
 let syncBusy = false;
 setInterval(async () => {
   if (syncBusy) return;
@@ -1223,11 +1231,13 @@ setInterval(async () => {
   try {
     // Alleen lopende etappes in de snelle loop; rechecks van afgeronde etappes
     // doet de 10-minuten-Action (zie runSync-commentaar) — scheelt CPU-pieken.
-    const result = await runSync({ fastOnly: true });
-    const acted = result.report.filter((r) => !r.includes('nog niet compleet') && !r.includes('ongewijzigd'));
-    if (acted.length) {
-      console.log('interval-sync:', acted.join(' | '));
-      bustCache();
+    if (syncEnabled) {
+      const result = await runSync({ fastOnly: true });
+      const acted = result.report.filter((r) => !r.includes('nog niet compleet') && !r.includes('ongewijzigd'));
+      if (acted.length) {
+        console.log('interval-sync:', acted.join(' | '));
+        bustCache();
+      }
     }
     await checkLineupReminders();
   } catch (e) {
