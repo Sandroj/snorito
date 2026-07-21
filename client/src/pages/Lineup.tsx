@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, cachedApi, flag, fmtDate, fmtTime, Rider, Stage, terrainLabel, typeChipClass } from '../api';
 import { ClockIcon, MountainIcon, CheckIcon } from '../components/Icons';
@@ -96,22 +96,35 @@ export default function Lineup() {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [saved, setSaved] = useState(false);
 
+  // Etappe waarvan de opstelling al in de state staat — voorkomt dat het
+  // effect hieronder de opstelling die we bij het laden al meekregen
+  // onmiddellijk nóg een keer ophaalt.
+  const loadedStage = useRef<number | null>(null);
+
   useEffect(() => {
+    // Alles in één ronde: de opstelling zat vroeger in een tweede golf, omdat
+    // het etappenummer pas uit /api/stages kwam. 'next' laat de server dat
+    // zelf bepalen, zodat deze pagina niet twee keer op de server hoeft te
+    // wachten (en dat is over de oceaan geen kleinigheid).
     Promise.all([
       cachedApi('/api/stages', 60_000), cachedApi('/api/riders'), api('/api/team'),
-      cachedApi('/api/classifications/current', 30_000),
-    ]).then(([s, r, t, c]) => {
+      cachedApi('/api/classifications/current', 30_000), api('/api/lineup/next'),
+    ]).then(([s, r, t, c, l]) => {
       setStages(s.stages);
       setRiders(r.riders);
       setTeamIds(t.riderIds);
       setClassPos(c.byRider || {});
-      const firstOpen = s.stages.find((st: Stage) => st.status === 'open');
-      setStageNr(firstOpen ? firstOpen.nr : s.stages[0]?.nr ?? null);
+      setStageNr(l.stage?.nr ?? s.stages[0]?.nr ?? null);
+      setSelected(new Set(l.riderIds));
+      setCaptainId(l.captainId);
+      setLocked(l.locked);
+      loadedStage.current = l.stage?.nr ?? null;
     });
   }, []);
 
   useEffect(() => {
-    if (stageNr == null) return;
+    if (stageNr == null || loadedStage.current === stageNr) return;
+    loadedStage.current = stageNr;
     api(`/api/lineup/${stageNr}`).then((l) => {
       setSelected(new Set(l.riderIds));
       setCaptainId(l.captainId);
