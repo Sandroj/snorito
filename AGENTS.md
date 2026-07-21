@@ -201,6 +201,18 @@ De app heet **Snorito** (mapnaam is nog "scorita").
 - **Live:** https://snorito-2j6w.onrender.com op Render (free tier).
   **Deploy = commit + push naar main** — Render bouwt en rolt automatisch uit.
   Er is dus geen aparte staging: wat je pusht, staat minuten later live.
+- **Regio (gemeten 21 juli 2026, belangrijk bij snelheidsklachten):**
+  `render.yaml` bevat geen `region:`, dus de service draait in Render's
+  default **Oregon (US West)**, terwijl de gebruikers in Nederland zitten.
+  Cloudflare-edge zit wél in AMS (TLS 30 ms), maar élke request loopt door
+  naar Oregon: **~175 ms vaste bodem**, ook voor `/healthz` dat niets doet.
+  `/api/riders` (mét DB-query) kost precies evenveel als `/healthz` — de
+  servercode en database zijn dus níet de bottleneck. Ga bij "de site is
+  traag" dus niet eerst code optimaliseren: meet met
+  `curl -w "%{time_starttransfer} %{time_appconnect}"` op `/healthz` en trek
+  af. Verplaatsen naar Frankfurt is de grootste denkbare winst, maar vereist
+  een nieuwe service (regio is niet wijzigbaar) én dat de **Neon-database ook
+  in de EU** staat — anders verschuift de latency naar de DB-verbinding.
 - **Puntenmotor:** `server/src/points.js` (tabellen bovenaan). Teamregels:
   constants in `server/src/db.js`. Spelregelpagina leest live uit
   `GET /api/rules`, dus UI en berekening kunnen niet uiteenlopen.

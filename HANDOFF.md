@@ -9,6 +9,90 @@ Postgres. De Tour de France 2026 loopt **t/m 26 juli 2026** — echte gebruikers
 dus terughoudend met refactors op koersdagen. Deploy = commit + push naar `main`
 (Render bouwt en rolt automatisch uit; geen staging).
 
+## Laatst gedaan (2026-07-21)
+
+### Sessie 5 — Automatisch uitgevallen renners + openbare live-opstelling (niet gecommit)
+Twee wensen van Max, allebei geïmplementeerd en lokaal geverifieerd (stub-API +
+preview-browser), **nog niet gecommit/gepusht** — even beoordelen voor push
+tijdens een koersdag.
+
+1. **Uitgevallen renners automatisch detecteren** (`server/src/letour.js`,
+   `sync.js`): het `itg`-fragment (algemeen klassement) van letour.fr bevat het
+   volledige nog-actieve veld, niet alleen top-N (geverifieerd: 166 van ~184
+   renners rond etappe 15). Een renner die uit dat klassement verdwijnt terwijl
+   hij nog niet als uitgevallen te boek staat, wordt automatisch op
+   `last_started_stage` gezet — precies wat Max eerst handmatig deed via het
+   adminformulier. Veiligheidsklep: `MAX_PLAUSIBLE_ABANDONS_PER_SYNC = 10` — te
+   veel gelijktijdige afwezigen (teken van een kapotte fetch) wordt NIET
+   automatisch verwerkt, komt als sync-fout in het adminpaneel. Draait mee in
+   de bestaande import (elke 2/10 min), geen nieuwe scraping-infra. Getest:
+   `detectNewAbandons` in `test/letour.test.js`. Het handmatige adminformulier
+   blijft bestaan als fallback/correctie.
+2. **Opstellingen openbaar zodra een etappe start, zonder punten**: nieuw
+   endpoint `GET /api/participants/:userId/lineup/:nr` (403 zolang de etappe
+   nog 'open' is, net als het bestaande `/points/:nr`). Client: `Ranking.tsx`
+   toont in de deelnemer-detailweergave, bóven de normale uitslagen-accordion,
+   een `LiveLineupCard` voor de etappe die nu 'started' is maar nog geen
+   verwerkte score heeft — alleen renners + kopman-chip + grijs voor
+   uitgevallen, geen puntenkolommen. Zodra de etappe verwerkt is (in
+   `user_scores`) neemt de gewone `StageAccordion` het vanzelf over.
+
+3. **Donkere achtergrond etappeprofielen** (`client/src/style.css`,
+   `.stage-profile`). De Scorito-PNG's hebben een **transparante** achtergrond
+   en zetten de **colnamen en hoogtes in witte tekst** (COL DU TOURMALET
+   2115 m, COL D'ASPIN 1489 m, …) plus witte verbindingslijnen naar het
+   profiel. Op de witte kaart was al die informatie volledig onzichtbaar.
+   Gemeten met een eigen PNG-decoder: ~4.600 witte pixels op transparant
+   tegenover ~10 donkere — een donkere achtergrond verbergt dus niets en
+   onthult veel. De zwarte onderschriften ("Pau — 186,2 km") staan op een
+   eigen ingebakken witte plaat en blijven leesbaar. Achtergrond is nu
+   hetzelfde navyverloop als `.total-hero`.
+
+### Snelheidsonderzoek (gemeten, 21 juli) — belangrijkste conclusie
+**De dominante vertraging is niet de code maar de regio.** `render.yaml` heeft
+geen `region:`, dus Render draait in de default **Oregon (US West)** terwijl de
+gebruikers in Nederland zitten. Metingen vanaf NL:
+- Cloudflare-edge zit in **AMS** (TLS-handshake 30 ms) — het netwerk hierheen
+  is dus snel.
+- `/healthz` (doet letterlijk niets) kost **~175-200 ms servertijd**, met
+  uitschieters naar 0,6 s.
+- `/api/riders` (DB-query + 6 KB antwoord) kost **exact evenveel** als
+  `/healthz`. De servercache en de indexen uit sessie 3 werken dus prima —
+  die ~175 ms is puur de oversteek AMS → Oregon → AMS.
+
+**Actie voor Max (niet zelf gedaan, want het raakt de infrastructuur):**
+overweeg de service naar **Frankfurt** te verplaatsen; dat brengt die ~175 ms
+per request terug naar ~15-25 ms — 7 à 10× sneller op élke request. Let op:
+(a) Render kan de regio van een bestaande service niet wijzigen, je maakt een
+nieuwe service (nieuwe URL, tenzij je een eigen domein gebruikt), en (b) check
+**eerst in welke regio de Neon-database staat** — staat die in de VS, dan
+verplaats je het probleem alleen maar naar de DB-verbinding. Beide in de EU is
+het doel.
+
+**Wat wél in code is opgelost:**
+- **Klassementsparser 19× sneller** (`letour.js`, `parseRiderRanking`):
+  cheerio bouwde een volledige DOM van een 610 KB-fragment voor ~166 rijen.
+  Vervangen door een gerichte scan: gemeten **196 ms → 10 ms** over alle vijf
+  fragmenten, met **exact identieke uitkomst** (geverifieerd tegen de oude
+  cheerio-implementatie op de echte live-fragmenten én de fixtures). Dit
+  scheelt op de 0,1-vCPU free tier seconden geblokkeerde event loop per
+  sync-tick — precies tijdens een etappe, wanneer iedereen ververst.
+  Randgevallen vastgelegd in een nieuwe test.
+- **`/api/participants/:userId`**: vier opeenvolgende DB-query's zijn nu één
+  `Promise.all`, en het antwoord bevat `liveStageNr` zodat de client daar geen
+  aparte `/api/stages`-call voor doet.
+- **Opstellingspagina laadt in één golf** in plaats van twee: nieuwe route
+  `/api/lineup/next` laat de server zelf de eerstvolgende open etappe kiezen,
+  zodat de client niet eerst `/api/stages` hoeft af te wachten. Geverifieerd in
+  de browser: één request in plaats van twee (~175 ms winst per bezoek).
+
+Niet gedaan (bewust): `parseTeamRanking` gebruikt nog cheerio — die draait
+alleen bij een ploegentijdrit (etappe 1, al geweest), dus niet de moeite.
+
+**Volgende stap:** review + commit + push (of vraag Max eerst). Verifieer na
+push met `git log`/live bundel-hash zoals gebruikelijk. Daarna de regiovraag
+hierboven met Max bespreken — dat is de grootste resterende winst.
+
 ## Laatst gedaan (2026-07-10)
 
 ### Sessie 4 — Herstel na feedback Max (d29e725)
