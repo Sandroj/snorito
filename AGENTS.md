@@ -217,10 +217,13 @@ De app heet **Snorito** (mapnaam is nog "scorita").
   Let op: publieke endpoints als `/api/riders` hebben servercache en raken de
   database niet — meet dus met een ongecachet endpoint zoals
   `/api/rider/1/results`, anders lijkt alles ten onrechte even snel.
-  Verhuizen naar Frankfurt is de grootste winst; stappenplan staat in
-  `docs/regio-migratie-frankfurt.md`. **Schrijf nieuwe endpoints met
-  `Promise.all` in plaats van opeenvolgende `await`s** — zolang de app in
-  Oregon staat kost elke extra query ~145 ms.
+  Verhuizen naar Frankfurt zou dit oplossen, maar **Max heeft op 21 juli 2026
+  besloten dat niet te doen** (onderbouwing en plan:
+  `docs/regio-migratie-frankfurt.md`). Stel het niet opnieuw voor — de
+  afweging is gemaakt. Wat daardoor blijft gelden: **schrijf endpoints met
+  `Promise.all` in plaats van opeenvolgende `await`s** en houd het aantal
+  serverrondes per pagina laag. Elke vermeden query scheelt ~145 ms, elke
+  vermeden serverronde ~175 ms; dat is nu de enige knop die nog draait.
 - **`DISABLE_SYNC=1`** zet de in-process uitslagensync uit (herinneringsmails
   blijven draaien). Nodig als er twee instanties tegen dezelfde database
   draaien, en bruikbaar als noodrem tijdens een koersdag.

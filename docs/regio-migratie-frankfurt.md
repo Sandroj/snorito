@@ -1,5 +1,15 @@
 # Verhuisplan: Render Oregon → Frankfurt
 
+> **Status: niet doen — Max heeft op 21 juli 2026 besloten de migratie niet uit
+> te voeren.** Dit document blijft staan als onderbouwing en als kant-en-klaar
+> plan mocht de vraag terugkomen. **Stel de verhuizing niet uit jezelf opnieuw
+> voor**; de afweging is gemaakt.
+>
+> Gevolg voor dagelijks werk: de ~145 ms per databasequery blijft bestaan.
+> Schrijf endpoints daarom met `Promise.all` in plaats van opeenvolgende
+> `await`s, en houd het aantal serverrondes per pagina laag — dat is nu de
+> enige knop die nog draait aan de snelheid.
+
 Opgesteld 21 juli 2026, op basis van eigen metingen aan de live app.
 
 ## Waarom

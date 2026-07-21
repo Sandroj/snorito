@@ -98,16 +98,23 @@ databasequery** bovenop de ~175 ms van de gebruiker naar Oregon. De eerder
 gemeten "alles is even snel"-uitkomst kwam doordat de publieke endpoints
 servercache hebben en de database niet raken; de pagina's achter login wél.
 
-Er is dus géén afweging: app en database horen allebei in Frankfurt. Het
-volledige verhuisplan (stappen, wat er breekt, terugvalplan, urenbudget) staat
-in **`docs/regio-migratie-frankfurt.md`**. Nieuw hulpmiddel daarvoor:
-**`DISABLE_SYNC=1`** zet de in-process sync uit, zodat er tijdens de overlap
-niet twee instanties dezelfde etappe importeren.
+**Besluit Max (21 juli): de migratie naar Frankfurt gaat niet door.** Het plan
+blijft als onderbouwing staan in `docs/regio-migratie-frankfurt.md`, maar stel
+het niet opnieuw voor. Gevolg: die ~145 ms per query en ~175 ms per serverronde
+blijven bestaan, dus snelheidswerk betekent voortaan **minder query's en minder
+serverrondes** — `Promise.all` in plaats van opeenvolgende `await`s.
 
-**Volgende stap:** review + commit + push (of vraag Max eerst). Verifieer na
-push met `git log`/live bundel-hash zoals gebruikelijk. Daarna de verhuizing
-volgens `docs/regio-migratie-frankfurt.md` — dat is veruit de grootste
-resterende snelheidswinst.
+Wel opgeleverd: **`DISABLE_SYNC=1`** zet de in-process sync uit (herinnerings-
+mails blijven draaien). Bedoeld als noodrem tijdens een koersdag.
+
+**Volgende stap:** alles van deze sessie staat live (gepusht 21 juli). Kandidaten
+voor vervolg, in volgorde van verwachte winst:
+1. `stageDaguitslag` (`server/src/index.js`) doet nog opeenvolgende query's —
+   met `Promise.all` valt daar naar schatting enkele honderden ms te winnen op
+   de uitslagenpagina.
+2. `/api/ranking` en `/api/my/points` op hetzelfde punt nalopen.
+3. De spelregel "eindklassement pas na ≥11 etappes" wordt nog niet in code
+   afgedwongen.
 
 ## Laatst gedaan (2026-07-10)
 
