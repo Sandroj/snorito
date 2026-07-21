@@ -549,9 +549,15 @@ app.put('/api/team', ah(async (req, res) => {
 
 // --- opstelling per etappe ---------------------------------------------------
 
+// :nr mag ook 'next' zijn: dan kiest de server zelf de eerstvolgende open
+// etappe (anders de laatste). Dat scheelt de opstellingspagina een hele
+// extra ronde naar de server — zij weet de etappe anders pas ná /api/stages.
 app.get('/api/lineup/:nr', ah(async (req, res) => {
   const user = await requireUser(req, res); if (!user) return;
-  const stage = await get('SELECT * FROM stages WHERE nr = ?', [Number(req.params.nr)]);
+  const stage = req.params.nr === 'next'
+    ? await get("SELECT * FROM stages WHERE status = 'open' ORDER BY nr LIMIT 1")
+      ?? await get('SELECT * FROM stages ORDER BY nr DESC LIMIT 1')
+    : await get('SELECT * FROM stages WHERE nr = ?', [Number(req.params.nr)]);
   if (!stage) return res.status(404).json({ error: 'Etappe niet gevonden' });
   const rows = await all('SELECT * FROM lineups WHERE user_id = ? AND stage_nr = ?', [user.id, stage.nr]);
   res.json({
@@ -843,26 +849,34 @@ app.get('/api/my/points/:nr', ah(async (req, res) => {
 // het team van 20 ligt na de Tourstart toch vast en is dus zichtbaar.
 app.get('/api/participants/:userId', ah(async (req, res) => {
   const user = await requireUser(req, res); if (!user) return;
-  const target = await get('SELECT id, name FROM users WHERE id = ?', [Number(req.params.userId)]);
+  const userId = Number(req.params.userId);
+  // Onafhankelijke query's parallel: elke DB-roundtrip naar Neon telt, dus
+  // niet vier keer achter elkaar wachten.
+  const [target, stageRow, teamRows, scores] = await Promise.all([
+    get('SELECT id, name FROM users WHERE id = ?', [userId]),
+    // current = laatst gestarte etappe; live = de etappe die nú rijdt (indien
+    // die er is). liveStageNr gaat mee in het antwoord zodat de client daar
+    // geen aparte /api/stages-call voor hoeft te doen.
+    get("SELECT MAX(nr) AS current, MAX(nr) FILTER (WHERE status = 'started') AS live FROM stages WHERE status != 'open'"),
+    all(`
+      SELECT r.id, r.name, r.nationality, r.price, r.type, r.last_started_stage, t.name AS team_name, t.shirt_url AS team_shirt
+      FROM user_teams ut JOIN riders r ON r.id = ut.rider_id JOIN cycling_teams t ON t.id = r.team_id
+      WHERE ut.user_id = ? ORDER BY r.price DESC, r.name
+    `, [userId]),
+    all('SELECT stage_nr, points FROM user_scores WHERE user_id = ? ORDER BY stage_nr', [userId]),
+  ]);
   if (!target) return res.status(404).json({ error: 'Deelnemer niet gevonden' });
 
-  // Bepaal huidge etappe: laatst gestarte (status != 'open')
-  const currentStageRow = await get("SELECT MAX(nr) as max FROM stages WHERE status != ?", ['open']);
-  const currentStage = currentStageRow?.max || 999; // 999 = geen etappe gestart
-
-  const team = (await all(`
-    SELECT r.id, r.name, r.nationality, r.price, r.type, r.last_started_stage, t.name AS team_name, t.shirt_url AS team_shirt
-    FROM user_teams ut JOIN riders r ON r.id = ut.rider_id JOIN cycling_teams t ON t.id = r.team_id
-    WHERE ut.user_id = ? ORDER BY r.price DESC, r.name
-  `, [target.id])).map((r) => ({
+  const currentStage = stageRow?.current || 999; // 999 = geen etappe gestart
+  const team = teamRows.map((r) => ({
     ...r,
     retired: r.last_started_stage !== null && r.last_started_stage < currentStage
   }));
-  const scores = await all('SELECT stage_nr, points FROM user_scores WHERE user_id = ? ORDER BY stage_nr', [target.id]);
 
   res.json({
     userId: target.id,
     name: target.name,
+    liveStageNr: stageRow?.live ?? null,
     team,
     scores: scores.map((s) => ({ stageNr: s.stage_nr, points: s.points })),
     total: scores.reduce((s, x) => s + x.points, 0),
@@ -881,6 +895,37 @@ app.get('/api/participants/:userId/points/:nr', ah(async (req, res) => {
   if (!stage) return res.status(404).json({ error: 'Etappe niet gevonden' });
   if (stage.status === 'open') return res.status(403).json({ error: 'Deze etappe is nog niet gestart' });
   res.json(await stageDaguitslag(userId, nr, stage));
+}));
+
+// Opstelling van een deelnemer voor één etappe, zonder punten — zodra de
+// etappe gestart is (opstellingen liggen dan toch al vast) mag iedereen zien
+// wie wie heeft opgesteld. Voor de daguitslag ná verwerking gebruik je
+// /points/:nr hierboven.
+app.get('/api/participants/:userId/lineup/:nr', ah(async (req, res) => {
+  const user = await requireUser(req, res); if (!user) return;
+  const nr = Number(req.params.nr);
+  const stage = await get('SELECT * FROM stages WHERE nr = ?', [nr]);
+  if (!stage) return res.status(404).json({ error: 'Etappe niet gevonden' });
+  if (stage.status === 'open') return res.status(403).json({ error: 'Deze etappe is nog niet gestart' });
+
+  const currentStageRow = await get("SELECT MAX(nr) as max FROM stages WHERE status != ?", ['open']);
+  const currentStage = currentStageRow?.max || 999;
+
+  const rows = await all(`
+    SELECT r.id, r.name, r.nationality, r.type, r.last_started_stage, l.is_captain,
+           t.name AS team_name, t.shirt_url AS team_shirt
+    FROM lineups l JOIN riders r ON r.id = l.rider_id JOIN cycling_teams t ON t.id = r.team_id
+    WHERE l.user_id = ? AND l.stage_nr = ? ORDER BY l.is_captain DESC, r.name
+  `, [Number(req.params.userId), nr]);
+
+  res.json({
+    stageNr: nr,
+    lineup: rows.map((r) => ({
+      riderId: r.id, name: r.name, nationality: r.nationality, type: r.type,
+      team: r.team_name, teamShirt: r.team_shirt, isCaptain: !!r.is_captain,
+      retired: r.last_started_stage !== null && r.last_started_stage < currentStage,
+    })),
+  });
 }));
 
 // --- admin ------------------------------------------------------------------

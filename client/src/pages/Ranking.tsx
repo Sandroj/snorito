@@ -54,9 +54,48 @@ interface TeamRider { id: number; name: string; price: number; type: string; tea
 interface Participant {
   userId: number;
   name: string;
+  liveStageNr: number | null;
   team: TeamRider[];
   scores: { stageNr: number; points: number }[];
   total: number;
+}
+
+interface LineupRider { riderId: number; name: string; nationality: string; type: string; team: string; teamShirt: string | null; isCaptain: boolean; retired: boolean; }
+
+// Opstelling van de lopende etappe (gestart, nog niet verwerkt dus nog geen
+// score): zichtbaar zodra de deadline verstreken is, zonder punten. Zodra de
+// etappe verwerkt is neemt de gewone StageAccordion het over.
+function LiveLineupCard({ userId, stageNr }: { userId: number; stageNr: number }) {
+  const data = useLiveApi<{ lineup: LineupRider[] }>(`/api/participants/${userId}/lineup/${stageNr}`);
+  return (
+    <div className="card">
+      <div className="acc-head">
+        <b>Etappe {stageNr}</b>
+        <span className="pts muted">in koers — nog geen punten</span>
+      </div>
+      {!data ? (
+        <div className="muted" style={{ margin: '10px 2px' }}>Laden…</div>
+      ) : data.lineup.length === 0 ? (
+        <p className="muted" style={{ margin: '8px 2px' }}>Geen opstelling ingevuld.</p>
+      ) : (
+        <table>
+          <tbody>
+            {data.lineup.map((r) => (
+              <tr key={r.riderId} className={r.retired ? 'row-retired' : ''}>
+                <td>
+                  <RiderInfo
+                    shirt={r.teamShirt} nationality={r.nationality} name={r.name} type={r.type} team={r.team}
+                    retired={r.retired}
+                    extra={r.isCaptain ? <span className="chip chip-geel" style={{ marginLeft: 6 }} title="Kopman">K</span> : null}
+                  />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
 }
 
 // Detailweergave van één deelnemer: scores per etappe (uitklapbaar met
@@ -66,6 +105,10 @@ function ParticipantDetail({ userId, onBack }: { userId: number; onBack: () => v
   const data = useLiveApi<Participant>(`/api/participants/${userId}`);
 
   if (!data) return <div className="center" style={{ margin: 40, color: '#667085' }}>Laden…</div>;
+
+  // Geen hooks hieronder — dit zijn gewone berekeningen na de early return.
+  const liveStageNr = data.liveStageNr;
+  const showLive = liveStageNr != null && !data.scores.some((s) => s.stageNr === liveStageNr);
 
   return (
     <div className="fade-in">
@@ -77,7 +120,8 @@ function ParticipantDetail({ userId, onBack }: { userId: number; onBack: () => v
       </div>
 
       <div className="section-label">Scores per etappe</div>
-      {data.scores.length === 0 && (
+      {showLive && <LiveLineupCard userId={userId} stageNr={liveStageNr!} />}
+      {data.scores.length === 0 && !showLive && (
         <div className="card empty"><div className="emoji">⏱️</div>Nog geen verwerkte etappes.</div>
       )}
       {data.scores.length > 0 && (
