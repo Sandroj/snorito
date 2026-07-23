@@ -257,7 +257,21 @@ controleer de ref-update-regel.
 1. Kloppen punten of uitslag niet? Volg de werkafspraken hierboven: importlogica
    fixen of adminformulier, nooit directe SQL.
 2. Site traag of plat? Render free tier valt in slaap; check `/healthz` en de
-   keepalive-action. Structurele versnelling = Render Starter. **Let op de
+   keepalive-action. Structurele versnelling = Render Starter. **Let op ook
+   Neon's gratis 100 CU-uren/maand** (sinds 22 juli 2026 bekend risico): de
+   2-min-sync houdt de compute 24/7 wakker, waardoor hij nooit suspendt en de
+   maandallowance kan opraken vóór het einde van de maand (gebeurd op 22 juli,
+   102,79/100 CU-uren). Check bij twijfel Neon's dashboard onder Billing →
+   Usage; oplossing is **Launch-plan** (pay-per-usage, ~€19/mnd bovengrens),
+   niet migreren — regio is al Frankfurt. **Update 23 juli 2026: dit is
+   daadwerkelijk gebeurd.** Neon effectueerde de pauze rond 14:08; toen viel
+   eerst alleen de database weg (DB-endpoint faalt, `/healthz` nog 200) en
+   binnen het uur de hele app (ook `/healthz` en homepage → 000, ~1u13m
+   volledige outage). Max heeft toen **geüpgraded naar Launch**; de app
+   herstelde daarna **vanzelf** (DB + healthcheck kwamen tegelijk terug, géén
+   redeploy nodig) en de sync haalde de gemiste etappe vanzelf in. Neon staat
+   nu dus op Launch — de free-tier-pauze is voorbij tenzij iemand terugzet.
+   **Let op de
    gevoelige plek: de in-process letour-sync** (elke 2 min, `index.js`
    `setInterval` → `runSync`). Op de 0,1-vCPU free tier is dit de enige plek die
    álle requests kan laten pieken (ook `/healthz`, dat verder nul werk doet):
@@ -274,6 +288,15 @@ controleer de ref-update-regel.
    dat wist accounts en poules.
 4. Sync draait niet? `gh run list` voor "Uitslagen sync", daarna handmatig
    triggeren met `gh workflow run`.
+
+5. **App is niet bestand tegen wegvallende database (valkuil, 23 juli 2026).**
+   Toen Neon pauzeerde bleef het niet netjes bij "DB-pagina's falen": binnen
+   een uur ging de héle app onderuit, ook `/healthz` en de homepage die de
+   database niet eens raken. Waarschijnlijk crasht het Node-proces op een
+   onafgevangen DB-fout (sync-loop of opstart) → Render herstart-lus → alles
+   plat. **Open punt voor ná de Tour:** maak `/healthz` en statische pagina's
+   robuust tegen DB-verlies, zodat een DB-hapering niet de hele site meesleurt.
+   Nu niet aanraken (koersdagen).
 
 De Tour loopt t/m 26 juli 2026 — tot die tijd is dit een live product met echte
 gebruikers. Wees terughoudend met refactors tijdens koersdagen.

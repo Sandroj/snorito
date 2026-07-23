@@ -9,6 +9,60 @@ Postgres. De Tour de France 2026 loopt **t/m 26 juli 2026** — echte gebruikers
 dus terughoudend met refactors op koersdagen. Deploy = commit + push naar `main`
 (Render bouwt en rolt automatisch uit; geen staging).
 
+## Laatst gedaan (2026-07-23)
+
+### Neon-storing meegemaakt en opgelost — nu op Launch
+De storing waar de 22-juli-sectie op wachtte is gebeurd en afgehandeld.
+**Tijdlijn:** database gezond t/m 14:07 → 14:08 Neon-pauze geëffectueerd, eerst
+alleen DB weg (`/healthz` nog 200) → binnen het uur volledige outage (ook
+`/healthz` en homepage → 000) → **15:20 volledig hersteld**. Totale downtime
+~1u13m. **Oorzaak:** free-tier compute-limiet (102,79/100 CU-uren), zoals
+verwacht — geen regio- of codeprobleem.
+
+**Opgelost:** Max heeft **geüpgraded naar het Neon Launch-plan**. De app
+herstelde daarna vanzelf (DB + healthcheck kwamen tegelijk terug, géén redeploy
+nodig), rit 18 was nog niet gefinisht dus geen uitslagen definitief gemist.
+Neon staat nu op Launch (pay-per-usage) — de free-tier-pauzes zijn voorbij
+tenzij iemand terugzet. De achtergrond-watcher heeft z'n werk gedaan en is
+gestopt; niet meer nodig.
+
+**Nieuwe valkuil vastgelegd in AGENTS.md (runbook punt 5):** de app is niet
+bestand tegen een wegvallende database — bij de pauze viel niet alleen de
+DB-laag weg maar de hele app, ook `/healthz`. Open punt voor **ná de Tour**:
+`/healthz` + statische pagina's robuust maken tegen DB-verlies. Nu niet
+aanraken (koersdagen).
+
+**Kostenkeuze voor ná de Tour (26 juli):** op Launch blijven (~€19/mnd, nul
+gedoe) óf terug naar free met een sync die 's nachts de compute laat slapen
+(onder 100 CU-uren blijven).
+
+## Laatst gedaan (2026-07-22)
+
+### Neon compute-limiet bereikt tijdens de Tour (opgelost op 23 juli — zie boven)
+Neon's gratis 100 CU-uren/maand zijn op: **102,79 CU-uren verbruikt**, dashboard
+toont "paused". Oorzaak is geen regio- of codeprobleem — de Neon-database staat
+al in Frankfurt (bevestigd, zie AGENTS.md) — maar **verbruik**: de in-process
+sync draait elke 2 minuten en houdt de compute daardoor 24/7 wakker, waardoor
+hij nooit naar nul suspendt. Op het moment van schrijven **werkt de site nog
+gewoon** (het "paused"-label loopt voor op de handhaving, Neon zelf waarschuwt
+dat metrics tot een uur kunnen achterlopen).
+
+**Besluit Max (22 juli):** niet migreren (regio klopt al), wél op enig moment
+upgraden naar het **Neon Launch-plan** (pay-per-usage, ~€2-3 voor de resterende
+Tour-dagen, ~€19/mnd als volledige maand). Betaling/upgrade is een actie die
+Max zelf in zijn Neon-account doet.
+
+**Bewust nog niet geüpgraded:** Max wil de storing zelf meemaken als leermoment
+("Optie A, laat het gewoon gebeuren, plan het niet"). Er draait een achtergrond-
+watcher (60s-interval, ongecached endpoint + `/healthz`) die een seintje geeft
+zodra Neon daadwerkelijk omslaat naar down — pas dán klikt Max op Upgrade. Let
+op voor de volgende sessie: **de watcher overleeft geen reboot of het sluiten
+van de sessie**; check bij aanvang eerst de actuele status (curl een ongecached
+endpoint, bv. `/api/rider/1/results`) in plaats van aan te nemen dat de site nog
+plat ligt of nog online is. Data is bij een pauze niet in gevaar (alleen
+compute, storage blijft intact) en de sync haalt gemiste uitslagen na de
+upgrade vanzelf in (rechecked tot 48u na etappestart).
+
 ## Laatst gedaan (2026-07-21)
 
 ### Sessie 5 — Automatisch uitgevallen renners + openbare live-opstelling (niet gecommit)
