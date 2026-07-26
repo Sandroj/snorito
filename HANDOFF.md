@@ -9,6 +9,44 @@ Postgres. De Tour de France 2026 loopt **t/m 26 juli 2026** — echte gebruikers
 dus terughoudend met refactors op koersdagen. Deploy = commit + push naar `main`
 (Render bouwt en rolt automatisch uit; geen staging).
 
+## Laatst gedaan (2026-07-26)
+
+### Eindklassement wordt nu automatisch afgeleid uit de slotetappe (zoals Scorito)
+De puntentabellen (`FINAL_POINTS`, `FINAL_TEAM_POINTS`) klopten al met Scorito;
+de **verwerking** was de zwakke plek: het eindklassement moest handmatig via het
+adminformulier (top 20/10/10/5 overtypen) en werd door niets automatisch
+getriggerd — bleef anders op 0. Nu:
+
+- **`processFinal` leidt de eindstand af** uit `classification_standings` van de
+  laatste etappe (`points.js`). `final_standings` blijft bestaan als **handmatige
+  override** (bron zelf fout). De sync bewaart klassementen op volledige diepte,
+  dus top 20 GC is aanwezig.
+- **`processStage` triggert het eindklassement** automatisch zodra de slotetappe
+  is verwerkt (idempotent; late correcties binnen 48u verversen mee).
+- **`runSync` berekent het eindklassement eenmalig** zodra de slotetappe
+  `finished` is en er nog geen eindscores zijn (`NOT EXISTS user_scores stage_nr=0`).
+  Dit vangt de "etappe al voorbij, ongewijzigd"-situatie op die de
+  processStage-trigger niet meer pakt. Geen admin-actie of secret nodig — de
+  2-min in-process loop én de 10-min Action doen het.
+- **`finalDone`** (adminstatus) kijkt nu naar echte scores i.p.v. `final_standings`.
+
+Commits: `8156501` (afleiden + processStage-trigger + finalDone) en `bb716c3`
+(runSync-gate). **Gepusht 26 juli ~20:40** → Render deployt automatisch;
+productie bleef gezond (healthz 200 door de hele window).
+
+**Valkuil / te verifiëren door Max (ingelogd):** controleer dat de eindpunten in
+de ranglijst verschijnen en dat GC-punten tot en met plek 20 verdeeld zijn. Dit
+klopt **alleen als etappe 21 via de auto-sync** is binnengekomen (volledige
+diepte). Is etappe 21 handmatig ingevoerd (adminformulier slaat klassementen
+maar tot **top 5** op), dan is de afgeleide eindstand te ondiep — gebruik dan het
+**eindklassement-override** in admin (volledige eindstand invoeren, opslaan &
+verwerken). Terugdraaien: `git revert bb716c3 8156501 && git push`.
+
+**Nog open:** geen automatische DB-test voor `processFinal`/`processStage` (sandbox
+blokkeert Neon, geen Postgres-harness); alleen de pure `computeOptimalStage` is
+getest. De spelregel "eindklassement pas na ≥11 etappes" wordt nog steeds niet in
+code afgedwongen (bij de TdF 2026 niet relevant — 21 etappes verreden).
+
 ## Laatst gedaan (2026-07-23)
 
 ### Neon-storing meegemaakt en opgelost — nu op Launch
