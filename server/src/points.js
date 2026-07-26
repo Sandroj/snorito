@@ -174,6 +174,11 @@ export async function processStage(stageNr) {
 
     await h.run("UPDATE stages SET status = 'finished' WHERE nr = ?", [stageNr]);
   });
+
+  // Slotetappe verwerkt → eindklassement automatisch (her)berekenen, zoals Scorito.
+  // Idempotent en goedkoop; loopt ook mee bij elke recheck van de laatste etappe.
+  const lastStageNr = (await get('SELECT MAX(nr) AS m FROM stages')).m;
+  if (stageNr === lastStageNr) await processFinal();
 }
 
 // Verwerkt het eindklassement (stage_nr 0 in rider_points/user_scores).
@@ -188,7 +193,16 @@ export async function processFinal() {
 
     const addPoints = (riderId, category, points) => h.run(ADD_POINTS_SQL, [0, riderId, category, points]);
 
-    const standings = await h.all('SELECT * FROM final_standings');
+    // Eindstand: handmatige override in final_standings gaat vóór (bron zelf fout);
+    // anders de eindstand van de klassementen na de laatste etappe — zoals Scorito,
+    // dat het eindklassement gewoon uit de slotstand afleidt i.p.v. apart in te voeren.
+    // classification_standings bewaart de volledige klassementen (niet alleen top 5),
+    // dus de diepte voor FINAL_POINTS (top 20/10/10/5) is er.
+    let standings = await h.all('SELECT classification, position, rider_id FROM final_standings');
+    if (standings.length === 0) {
+      const src = (await h.get('SELECT MAX(stage_nr) AS m FROM classification_standings')).m;
+      if (src) standings = await h.all('SELECT classification, position, rider_id FROM classification_standings WHERE stage_nr = ?', [src]);
+    }
     const winners = {};
     for (const s of standings) {
       const pts = FINAL_POINTS[s.classification]?.[s.position - 1];

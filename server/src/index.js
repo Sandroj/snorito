@@ -962,7 +962,10 @@ app.get('/api/admin/overview', ah(async (req, res) => {
         : !!(await get('SELECT 1 FROM stage_results WHERE stage_nr = ? LIMIT 1', [s.nr])),
     });
   }
-  const finalDone = !!(await get('SELECT 1 FROM final_standings LIMIT 1'));
+  // Eindklassement verwerkt? Kijk naar de echte scores (stage_nr 0), niet naar
+  // final_standings — die blijft leeg als de eindstand automatisch uit de
+  // laatste etappe wordt afgeleid i.p.v. handmatig ingevoerd.
+  const finalDone = !!(await get('SELECT 1 FROM user_scores WHERE stage_nr = 0 LIMIT 1'));
   res.json({ stages, finalDone });
 }));
 
