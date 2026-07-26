@@ -2,7 +2,7 @@
 // Aangeroepen via POST /api/cron/pcs-sync (GitHub Actions, elke 10 min).
 // Etappes met result_source='manual' worden nooit aangeraakt.
 import { get, all, run, tx } from './db.js';
-import { processStage } from './points.js';
+import { processStage, processFinal } from './points.js';
 import { bustCache } from './cache.js';
 import { parseStagePage, parseTttResults, matchByName, matchTeamsByName } from './pcs.js';
 import {
@@ -326,6 +326,19 @@ export async function runSync({ fastOnly = false } = {}) {
       await note(p.nr, e.message);
       report.push(`etappe ${p.nr}: FOUT — ${e.message}`);
     }
+  }
+
+  // Slotetappe voorbij maar eindklassement nog niet berekend? Doe het nu, eenmalig
+  // (zodra het verwerkt is levert de NOT EXISTS niets meer op). Latere correcties op
+  // de slotetappe lopen via processStage → processFinal en verversen het vanzelf.
+  const finalReady = await get(`
+    SELECT 1 FROM stages
+    WHERE nr = (SELECT MAX(nr) FROM stages) AND status = 'finished'
+      AND NOT EXISTS (SELECT 1 FROM user_scores WHERE stage_nr = 0)
+    LIMIT 1`);
+  if (finalReady) {
+    await processFinal();
+    report.push('eindklassement automatisch berekend uit de slotetappe');
   }
 
   return { at: tick.at, report };
