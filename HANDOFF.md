@@ -4,10 +4,18 @@
 > Architectuur, valkuilen en runbook staan in `AGENTS.md` — hier alleen de stand.
 
 ## Waar staan we
+**STOPGEZET op 2026-07-30** om Neon-kosten te vermijden — zie **`REVIVE.md`** voor
+de uit-stand en hoe je alles weer aanzet. Software-kant is uit (GitHub-workflows
+`disabled_manually`, ochtendcheck gepauzeerd, backup lokaal veilig). Dashboard-kant
+staat nog open voor Max: Render **Suspend**, cron-job.org-ping uit, Neon
+**Launch → Free**. Data blijft intact; niets herseeden bij heropstart.
+
+De Tour de France 2026 liep t/m 26 juli 2026 en is afgelopen. Onderstaande stand
+gold tijdens de Tour; bewaard voor context bij een volgende koers.
+
 **Live product** op https://snorito-2j6w.onrender.com (Render free tier), Neon
-Postgres. De Tour de France 2026 loopt **t/m 26 juli 2026** — echte gebruikers,
-dus terughoudend met refactors op koersdagen. Deploy = commit + push naar `main`
-(Render bouwt en rolt automatisch uit; geen staging).
+Postgres. Deploy = commit + push naar `main` (Render bouwt en rolt automatisch
+uit; geen staging).
 
 ## Laatst gedaan (2026-07-26)
 
