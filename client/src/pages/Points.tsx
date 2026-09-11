@@ -12,6 +12,11 @@ export default function Points() {
   const scores = useLiveApi<{ scores: StageScore[] }>('/api/my/points')?.scores ?? [];
 
   const total = scores.reduce((s, x) => s + x.points, 0);
+  const stageCount = scores.filter((x) => x.stageNr > 0).length;
+  const hasFinal = scores.some((x) => x.stageNr === 0);
+  const subtitle = stageCount === 0
+    ? 'nog geen etappes verwerkt'
+    : `over ${stageCount} etappe${stageCount !== 1 ? 's' : ''}${hasFinal ? ' + eindklassement' : ''}`;
 
   return (
     <div className="fade-in">
@@ -20,7 +25,7 @@ export default function Points() {
         <div className="lab">Totaalscore</div>
         <div className="big">{total}</div>
         <div className="lab" style={{ letterSpacing: 0, textTransform: 'none' }}>
-          {scores.length > 0 ? `over ${scores.length} verwerkte ronde${scores.length !== 1 ? 's' : ''}` : 'nog geen etappes verwerkt'}
+          {subtitle}
         </div>
       </div>
 

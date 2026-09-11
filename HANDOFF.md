@@ -4,11 +4,24 @@
 > Architectuur, valkuilen en runbook staan in `AGENTS.md` — hier alleen de stand.
 
 ## Waar staan we
-**STOPGEZET op 2026-07-30** om Neon-kosten te vermijden — zie **`REVIVE.md`** voor
-de uit-stand en hoe je alles weer aanzet. Software-kant is uit (GitHub-workflows
-`disabled_manually`, ochtendcheck gepauzeerd, backup lokaal veilig). Dashboard-kant
-staat nog open voor Max: Render **Suspend**, cron-job.org-ping uit, Neon
-**Launch → Free**. Data blijft intact; niets herseeden bij heropstart.
+**GEARCHIVEERD.** Stopgezet op 2026-07-30 (Neon-kosten), netjes afgesloten op
+2026-09-11. Alles staat uit: Render gesuspend (503 is normaal), GitHub-workflows
+`disabled_manually`, ochtendcheck gepauzeerd, Neon op Free, backup lokaal in
+`backups/shutdown-2026-07-30/` (gitignored). Repo is schoon, laatste build
+slaagt. **Weer aanzetten: volg `REVIVE.md`.** Data blijft intact; niets
+herseeden bij heropstart.
+
+Laatste opruimsessie (2026-09-11): losse wijzigingen gecommit (Cloudflare-notitie
+in REVIVE, ondertitel op de puntenpagina telt etappes + eindklassement apart,
+`docs/snorito-bouwgeschiedenis.md` toegevoegd), archief-kop in `AGENTS.md`.
+
+Er is geen "volgende stap" zolang er geen nieuwe koers is. Bij heropstart:
+eerst `REVIVE.md`, dan de backlog onder "Openstaand / ideeën" hieronder en de
+open punten uit de 26-juli-sectie (DB-robuustheid van `/healthz`, ≥11-etappes-
+regel).
+
+---
+*Onderstaande is de stand van tijdens de Tour de France 2026, bewaard als context.*
 
 De Tour de France 2026 liep t/m 26 juli 2026 en is afgelopen. Onderstaande stand
 gold tijdens de Tour; bewaard voor context bij een volgende koers.

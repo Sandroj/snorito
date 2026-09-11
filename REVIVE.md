@@ -20,14 +20,17 @@ Software-kant (door Claude, omkeerbaar):
       (`gh workflow disable <naam>` — status `disabled_manually`).
 - [x] Geplande Claude-taak `snorito-ochtendcheck` gepauzeerd.
 
-Dashboard-kant (moet Max doen — buiten Claude's bereik):
-- [ ] **Render** → service `snorito` → **Suspend** (stopt de in-process sync =
-      grootste kostendrijver; site gaat volledig offline).
-- [ ] **cron-job.org** → de `/healthz`-ping op pauze/uit.
-- [ ] **Neon** → project → plan van **Launch → Free** voor écht €0. Op Launch
-      blijft een vaste basis (~$5/mnd) staan, ook als compute op nul staat.
-      Kan pas veilig terug naar Free zodra al het bovenstaande verkeer stil is
-      (anders raakt de Free-tier 100 CU-uren weer op).
+Dashboard-kant (door Max gedaan; stand gecontroleerd 2026-09-11):
+- [x] **Render** → service `snorito` → **Suspend** (geverifieerd: `/healthz`
+      geeft 503 "This service has been suspended by its owner").
+- [x] **cron-job.org** → de `/healthz`-ping uit (niet zelf te controleren;
+      volgens `notes/projectstatus.md` gedaan).
+- [x] **Neon** → plan **Launch → Free** (idem, volgens projectstatus).
+
+**Let op de backup:** `backups/` staat in `.gitignore` (bevat accountdata) en
+bestaat dus alleen op deze Mac. Wil je hem veiligstellen, kopieer de map
+`backups/shutdown-2026-07-30/` handmatig naar Drive of een externe schijf.
+Zolang Neon het project niet verwijdert staat de data daar ook nog.
 
 ## Weer aanzetten (volgende koers)
 
@@ -41,6 +44,15 @@ Dashboard-kant (moet Max doen — buiten Claude's bereik):
    zie `AGENTS.md` voor de importflow. De oude Tour-data blijft staan tenzij
    je bewust herseedt (**nooit herseeden = accounts + poules wissen**).
 5. Optioneel: `snorito-ochtendcheck` weer inschakelen als je monitoring wilt.
+
+## Cloudflare-factuur (vraag kwam 2x terug op 2026-08-04)
+
+Een **€0-invoice van Cloudflare is normaal** — dat is de gratis-plan
+bevestigingsmail, geen actie nodig, niet opzeggen. Cloudflare zit vóór de site
+(TLS/DNS); opzeggen breekt DNS. Alleen een factuur die *niet* €0 is is het
+bekijken waard. (Ook gevraagd of Lovable, dat aan het sluimerende
+worldmap-project hangt, een lopend maandabonnement is — nog niet geverifieerd,
+zie `projects/worldmap/HANDOFF.md`.)
 
 ## Terugzetten uit backup (alleen bij dataverlies)
 

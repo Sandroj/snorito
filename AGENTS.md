@@ -4,6 +4,13 @@
      Bewerk de flow-regels hieronder alleen bewust — ze houden het project
      doorontwikkelbaar over meerdere AI's en sessies heen. -->
 
+> **GEARCHIVEERD (sinds 2026-07-30, opgeruimd 2026-09-11).** Snorito staat uit:
+> Render-service gesuspend (`/healthz` geeft 503 "Service Suspended" — dat is
+> de bedoeling, geen storing), GitHub-workflows uitgeschakeld, Neon op Free.
+> Alles hieronder over "live product", koersdagen en monitoring beschrijft de
+> Tour de France 2026 en geldt pas weer na heropstart. **Weer aanzetten:
+> `REVIVE.md`.** Doe niets aan infrastructuur zonder dat bestand te lezen.
+
 # Doorontwikkel-flow (elke AI, elke sessie)
 
 Dit project gebruikt een tool-neutrale flow zodat elke AI — of het nu Claude,
